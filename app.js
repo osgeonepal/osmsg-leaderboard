@@ -93,6 +93,8 @@ function sumTagKey(ts, k) {
 function transform(row) {
     const ts = row.tag_stats || {};
     const b = sumTagKey(ts, "building"), h = sumTagKey(ts, "highway");
+    const lu = sumTagKey(ts, "landuse"), wt = sumTagKey(ts, "waterway");
+    const nt = sumTagKey(ts, "natural"), am = sumTagKey(ts, "amenity");
     return {
         uid: row.uid,
         username: row.name,
@@ -105,6 +107,10 @@ function transform(row) {
         pois_created: row.poi_create, pois_modified: row.poi_modify,
         buildings_created: b.c, buildings_modified: b.m,
         highways_created: h.c, highways_modified: h.m,
+        landuse_created: lu.c, landuse_modified: lu.m,
+        waterways_created: wt.c, waterways_modified: wt.m,
+        natural_created: nt.c, natural_modified: nt.m,
+        amenities_created: am.c, amenities_modified: am.m,
         created: row.nodes_create + row.ways_create + row.rels_create,
         modified: row.nodes_modify + row.ways_modify + row.rels_modify,
         deleted: row.nodes_delete + row.ways_delete + row.rels_delete,
@@ -352,23 +358,46 @@ const OV_CELLS = [
     ["Created", "created", "plus-square", "ov-add"],
     ["Modified", "modified", "edit-3", "ov-mod"],
     ["Deleted", "deleted", "trash-2", "ov-del"],
-    ["Buildings", "buildings", "building-2", ""],
-    ["Highways", "highways", "route", ""],
-    ["POIs", "pois", "map-pin", ""],
+    ["Buildings", "buildings", "building-2", "split"],
+    ["Highways", "highways", "route", "split"],
+    ["POIs", "pois", "map-pin", "split"],
+    ["Landuse", "landuse", "layers", "split"],
+    ["Waterways", "waterways", "waves", "split"],
+    ["Natural", "natural", "trees", "split"],
+    ["Amenities", "amenities", "coffee", "split"],
 ];
-const ovCellsHtml = (data) => OV_CELLS.map(([l, k, ic, mod]) =>
-    `<div class="ov-cell${mod ? " " + mod : ""}${data[k] ? "" : " is-zero"}">
+const ovCellsHtml = (data) => OV_CELLS.map(([l, k, ic, mod]) => {
+    if (mod === "split") {
+        const c = data[k] || 0, m = data[k + "_mod"] || 0;
+        const isZero = !c && !m;
+        return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}">
+      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+      <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span></div>
+    </div>`;
+    }
+    return `<div class="ov-cell${mod ? " " + mod : ""}${data[k] ? "" : " is-zero"}">
     <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
     <div class="val">${fmt.format(data[k] || 0)}</div>
-  </div>`).join("");
+  </div>`;
+}).join("");
 const rowTotals = (rows) => rows.reduce((a, r) => {
     a.created += r.created; a.modified += r.modified; a.deleted += r.deleted;
     a.changesets += r.changesets;
-    a.buildings += r.buildings_created;
-    a.highways += r.highways_created;
-    a.pois += r.pois_created;
+    a.buildings += r.buildings_created; a.buildings_mod += r.buildings_modified;
+    a.highways += r.highways_created; a.highways_mod += r.highways_modified;
+    a.pois += r.pois_created; a.pois_mod += r.pois_modified;
+    a.landuse += r.landuse_created; a.landuse_mod += r.landuse_modified;
+    a.waterways += r.waterways_created; a.waterways_mod += r.waterways_modified;
+    a.natural += r.natural_created; a.natural_mod += r.natural_modified;
+    a.amenities += r.amenities_created; a.amenities_mod += r.amenities_modified;
     return a;
-}, { created: 0, modified: 0, deleted: 0, changesets: 0, buildings: 0, highways: 0, pois: 0 });
+}, {
+    created: 0, modified: 0, deleted: 0, changesets: 0,
+    buildings: 0, buildings_mod: 0, highways: 0, highways_mod: 0,
+    pois: 0, pois_mod: 0, landuse: 0, landuse_mod: 0,
+    waterways: 0, waterways_mod: 0, natural: 0, natural_mod: 0,
+    amenities: 0, amenities_mod: 0,
+});
 
 function renderOverview() {
     const strip = $("#ov-strip"), breakdown = $("#ov-breakdown");
