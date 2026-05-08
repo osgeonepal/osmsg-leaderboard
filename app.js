@@ -475,8 +475,11 @@ function renderPodium() {
       <span class="pod-avatar" data-osm-uid="${r.uid}" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
       <span class="pod-name" title="${escapeHtml(r.username)}">${escapeHtml(r.username)}</span>
       <span class="pod-score-wrap">
-        <span class="pod-score">${fmt.format(r.map_changes)}</span>
-        <div class="pod-score-label">changes</div>
+        <div class="pod-score-line">
+          <span class="pod-score">${fmt.format(r.map_changes)}</span>
+          <span class="pod-cs" title="changesets"><i data-lucide="git-commit-horizontal"></i>${fmt.format(r.changesets || 0)}</span>
+        </div>
+        <div class="pod-score-label">changes · changesets</div>
       </span>
       <div class="pod-mini" aria-label="Created, modified, deleted">
         <span class="c" title="created"><i data-lucide="plus"></i>${fmt.format(created)}</span>

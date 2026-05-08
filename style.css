@@ -872,6 +872,23 @@ main > section { min-width: 0; }
     letter-spacing: 0.12em;
     color: var(--muted);
 }
+.pod-cs {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+.pod-cs i { width: 12px; height: 12px; stroke-width: 2; transform: translateY(2px); }
+.pod-score-line {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 10px;
+    justify-content: center;
+}
 .pod-mini {
     margin-top: 6px;
     display: inline-flex;
