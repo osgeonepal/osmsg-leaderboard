@@ -467,26 +467,55 @@ const USER_TOTAL_CELLS = [
     ["Modified", "modified", "edit-3", "ov-mod"],
     ["Deleted", "deleted", "trash-2", "ov-del"],
     ["Changesets", "changesets", "git-commit-horizontal", ""],
-    ["Buildings", "buildings_created", "building-2", ""],
-    ["Highways", "highways_created", "route", ""],
-    ["POIs", "pois_created", "map-pin", ""],
+    ["Buildings", "buildings", "building-2", "split"],
+    ["Highways", "highways", "route", "split"],
+    ["POIs", "pois", "map-pin", "split"],
+    ["Landuse", "landuse", "layers", "split"],
+    ["Waterways", "waterways", "waves", "split"],
+    ["Natural", "natural", "trees", "split"],
+    ["Amenities", "amenities", "coffee", "split"],
 ];
-const USER_ELEM_CELLS = [
-    ["Nodes created", "nodes_created", "circle-dot", "ov-add"],
-    ["Nodes modified", "nodes_modified", "circle-dot", "ov-mod"],
-    ["Nodes deleted", "nodes_deleted", "circle-dot", "ov-del"],
-    ["Ways created", "ways_created", "spline", "ov-add"],
-    ["Ways modified", "ways_modified", "spline", "ov-mod"],
-    ["Ways deleted", "ways_deleted", "spline", "ov-del"],
-    ["Relations created", "rels_created", "share-2", "ov-add"],
-    ["Relations modified", "rels_modified", "share-2", "ov-mod"],
-    ["Relations deleted", "rels_deleted", "share-2", "ov-del"],
+const USER_ELEM_GROUPS = [
+    ["Nodes", "circle-dot", "nodes_created", "nodes_modified", "nodes_deleted"],
+    ["Ways", "spline", "ways_created", "ways_modified", "ways_deleted"],
+    ["Relations", "share-2", "rels_created", "rels_modified", "rels_deleted"],
 ];
-const cellsHtml = (cells, r) => cells.map(([l, k, ic, mod]) =>
-    `<div class="ov-cell${mod ? " " + mod : ""}${r[k] ? "" : " is-zero"}">
+const elemCellsHtml = (r) => USER_ELEM_GROUPS.map(([l, ic, ck, mk, dk]) => {
+    const c = r[ck] || 0, m = r[mk] || 0, d = r[dk] || 0;
+    const isZero = !c && !m && !d;
+    return `<div class="ov-cell ov-elem${isZero ? " is-zero" : ""}">
+    <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+    <div class="val">
+      <span class="c" title="created">+${fmt.format(c)}</span>
+      <span class="m" title="modified">~${fmt.format(m)}</span>
+      <span class="d" title="deleted">−${fmt.format(d)}</span>
+    </div>
+  </div>`;
+}).join("");
+const SPLIT_KEY_MAP = {
+    buildings: ["buildings_created", "buildings_modified"],
+    highways: ["highways_created", "highways_modified"],
+    pois: ["pois_created", "pois_modified"],
+    landuse: ["landuse_created", "landuse_modified"],
+    waterways: ["waterways_created", "waterways_modified"],
+    natural: ["natural_created", "natural_modified"],
+    amenities: ["amenities_created", "amenities_modified"],
+};
+const cellsHtml = (cells, r) => cells.map(([l, k, ic, mod]) => {
+    if (mod === "split") {
+        const [ck, mk] = SPLIT_KEY_MAP[k];
+        const c = r[ck] || 0, m = r[mk] || 0;
+        const isZero = !c && !m;
+        return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}">
+      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+      <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span></div>
+    </div>`;
+    }
+    return `<div class="ov-cell${mod ? " " + mod : ""}${r[k] ? "" : " is-zero"}">
     <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
     <div class="val">${fmt.format(r[k] || 0)}</div>
-  </div>`).join("");
+  </div>`;
+}).join("");
 
 function openUserModal(username) {
     const r = state.rows.find(x => x.username === username); if (!r) return;
@@ -501,7 +530,7 @@ function openUserModal(username) {
 
     const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats([r]), { maxKeys: 24, maxVals: 8 });
     let html = `<div class="overview-strip">${cellsHtml(USER_TOTAL_CELLS, r)}</div>`;
-    html += `<div class="overview-strip" style="margin-top:6px">${cellsHtml(USER_ELEM_CELLS, r)}</div>`;
+    html += `<div class="overview-strip" style="margin-top:6px">${elemCellsHtml(r)}</div>`;
     if (keyCount) {
         html += `<div class="ov-toggle" style="border-bottom:none">
       <span class="ov-breakdown-meta">${fmt.format(keyCount)} tag key${keyCount === 1 ? "" : "s"} · ${fmt.format(valueCount)} value${valueCount === 1 ? "" : "s"}</span>
