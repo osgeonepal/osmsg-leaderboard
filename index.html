@@ -140,13 +140,10 @@
   </div>
 
   <main role="main">
-    <section aria-labelledby="ov-title">
-      <div class="section-header">
-        <h2 id="ov-title" class="section-title"><i data-lucide="activity"></i> Overview</h2>
-        <span id="range-label" class="section-meta">last 24 hours</span>
-      </div>
+    <section aria-label="Overview">
       <div id="overview">
-        <div class="overview-strip" id="ov-strip"></div>
+        <div class="overview-strip" id="ov-strip-totals"></div>
+        <div class="overview-strip" id="ov-strip" style="margin-top:6px"></div>
         <div class="ov-toggle">
           <span class="ov-breakdown-meta" id="ov-breakdown-meta"></span>
           <button type="button" class="ov-toggle-btn" id="ov-toggle-btn" aria-expanded="false"
@@ -160,10 +157,7 @@
     </section>
 
     <section aria-labelledby="podium-title">
-      <div class="section-header">
-        <h2 id="podium-title" class="sr-only">Top three</h2>
-        <span class="section-meta">click a card to view contributions</span>
-      </div>
+      <h2 id="podium-title" class="sr-only">Top three contributors</h2>
       <div class="podium" id="podium" aria-live="polite"></div>
     </section>
 

@@ -305,7 +305,6 @@ function applyDerivedFilters() {
 }
 function render() {
     applyDerivedFilters();
-    $("#range-label").textContent = RANGE_LABELS[state.range] + (state.hashtags.length ? ` · #${state.hashtags.join(" #")}` : "");
     renderOverview(); renderPodium(); renderTable(); renderWindowBar();
 }
 
@@ -352,12 +351,17 @@ function tagBreakdownHtml(agg, { maxKeys = 18 } = {}) {
     return { html, keyCount: keys.length, valueCount };
 }
 
-const OV_CELLS = [
-    ["Mappers", "mappers", "users", ""],
-    ["Changesets", "changesets", "git-commit-horizontal", ""],
+const OV_CELLS_TOTALS = [
     ["Created", "created", "plus-square", "ov-add"],
     ["Modified", "modified", "edit-3", "ov-mod"],
     ["Deleted", "deleted", "trash-2", "ov-del"],
+    ["Mappers", "mappers", "users", ""],
+    ["Changesets", "changesets", "git-commit-horizontal", ""],
+];
+const OV_CELLS = [
+    ["Nodes", "nodes", "circle-dot", "elem"],
+    ["Ways", "ways", "spline", "elem"],
+    ["Relations", "rels", "share-2", "elem"],
     ["Buildings", "buildings", "building-2", "split"],
     ["Highways", "highways", "route", "split"],
     ["POIs", "pois", "map-pin", "split"],
@@ -366,7 +370,7 @@ const OV_CELLS = [
     ["Natural", "natural", "trees", "split"],
     ["Amenities", "amenities", "coffee", "split"],
 ];
-const ovCellsHtml = (data) => OV_CELLS.map(([l, k, ic, mod]) => {
+const renderOvCell = (data) => ([l, k, ic, mod]) => {
     if (mod === "split") {
         const c = data[k] || 0, m = data[k + "_mod"] || 0;
         const isZero = !c && !m;
@@ -375,14 +379,27 @@ const ovCellsHtml = (data) => OV_CELLS.map(([l, k, ic, mod]) => {
       <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span></div>
     </div>`;
     }
+    if (mod === "elem") {
+        const c = data[k + "_c"] || 0, m = data[k + "_m"] || 0, d = data[k + "_d"] || 0;
+        const isZero = !c && !m && !d;
+        return `<div class="ov-cell ov-elem${isZero ? " is-zero" : ""}">
+      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+      <div class="val"><span class="c" title="created">+${fmt.format(c)}</span><span class="m" title="modified">~${fmt.format(m)}</span><span class="d" title="deleted">−${fmt.format(d)}</span></div>
+    </div>`;
+    }
     return `<div class="ov-cell${mod ? " " + mod : ""}${data[k] ? "" : " is-zero"}">
     <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
     <div class="val">${fmt.format(data[k] || 0)}</div>
   </div>`;
-}).join("");
+};
+const ovCellsHtml = (data) => OV_CELLS.map(renderOvCell(data)).join("");
+const ovTotalsHtml = (data) => OV_CELLS_TOTALS.map(renderOvCell(data)).join("");
 const rowTotals = (rows) => rows.reduce((a, r) => {
     a.created += r.created; a.modified += r.modified; a.deleted += r.deleted;
     a.changesets += r.changesets;
+    a.nodes_c += r.nodes_created; a.nodes_m += r.nodes_modified; a.nodes_d += r.nodes_deleted;
+    a.ways_c += r.ways_created; a.ways_m += r.ways_modified; a.ways_d += r.ways_deleted;
+    a.rels_c += r.rels_created; a.rels_m += r.rels_modified; a.rels_d += r.rels_deleted;
     a.buildings += r.buildings_created; a.buildings_mod += r.buildings_modified;
     a.highways += r.highways_created; a.highways_mod += r.highways_modified;
     a.pois += r.pois_created; a.pois_mod += r.pois_modified;
@@ -393,6 +410,9 @@ const rowTotals = (rows) => rows.reduce((a, r) => {
     return a;
 }, {
     created: 0, modified: 0, deleted: 0, changesets: 0,
+    nodes_c: 0, nodes_m: 0, nodes_d: 0,
+    ways_c: 0, ways_m: 0, ways_d: 0,
+    rels_c: 0, rels_m: 0, rels_d: 0,
     buildings: 0, buildings_mod: 0, highways: 0, highways_mod: 0,
     pois: 0, pois_mod: 0, landuse: 0, landuse_mod: 0,
     waterways: 0, waterways_mod: 0, natural: 0, natural_mod: 0,
@@ -400,15 +420,18 @@ const rowTotals = (rows) => rows.reduce((a, r) => {
 });
 
 function renderOverview() {
-    const strip = $("#ov-strip"), breakdown = $("#ov-breakdown");
+    const strip = $("#ov-strip"), totals = $("#ov-strip-totals"), breakdown = $("#ov-breakdown");
     const meta = $("#ov-breakdown-meta"), btn = $("#ov-toggle-btn"), label = $("#ov-toggle-label");
     if (!state.rows.length) {
+        totals.innerHTML = "";
         strip.innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">No data in this window. Try a wider time range or a different hashtag.</div>`;
         breakdown.innerHTML = ""; breakdown.hidden = true;
         btn.setAttribute("aria-expanded", "false"); btn.disabled = true; meta.textContent = "";
         return;
     }
-    strip.innerHTML = ovCellsHtml({ ...rowTotals(state.rows), mappers: state.rows.length });
+    const data = { ...rowTotals(state.rows), mappers: state.rows.length };
+    totals.innerHTML = ovTotalsHtml(data);
+    strip.innerHTML = ovCellsHtml(data);
     const { html, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats(state.rows));
     if (keyCount) {
         breakdown.innerHTML = html;
