@@ -514,6 +514,101 @@
     border-left: 1px solid rgba(45,95,63,0.25);
     margin-left: 2px;
   }
+  .tag-breakdown {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .tag-breakdown-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .tag-breakdown-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .tag-breakdown-meta {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .tag-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+  .tag-key-card {
+    background: var(--green-tint);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md, 10px);
+    padding: 10px 12px;
+  }
+  .tag-key-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed rgba(79,138,101,0.25);
+  }
+  .tag-key-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--green-deep);
+    letter-spacing: 0.01em;
+  }
+  .tag-key-totals {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    display: flex;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .tag-key-totals .c { color: var(--green-deep); }
+  .tag-key-totals .m { color: var(--ink-2); opacity: 0.85; }
+  .tag-value-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 10px;
+    padding: 3px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .tag-value-row + .tag-value-row { border-top: 1px solid rgba(229,224,213,0.6); }
+  .tag-value-name {
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tag-value-counts {
+    color: var(--muted);
+    font-size: 11px;
+    display: flex;
+    gap: 6px;
+  }
+  .tag-value-counts .c { color: var(--green-deep); font-weight: 600; }
+  .tag-value-counts .m { color: var(--ink-2); }
+  .tag-key-more {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+  }
   .podium {
     display: grid;
     grid-template-columns: 1fr 1.2fr 1fr;
@@ -1235,30 +1330,47 @@ function refreshIcons() {
     window.lucide.createIcons({ attrs: { "stroke-width": 2 } });
   }
 }
+function sumTagKey(tagStats, key) {
+  const node = tagStats && tagStats[key];
+  if (!node || typeof node !== "object") return { c: 0, m: 0 };
+  let c = 0, m = 0;
+  for (const v in node) {
+    c += +(node[v]?.c || 0);
+    m += +(node[v]?.m || 0);
+  }
+  return { c, m };
+}
 function norm(row) {
   const get = (...keys) => {
     for (const k of keys) if (row[k] !== undefined && row[k] !== null) return row[k];
     return 0;
   };
+  const tagStats = row.tag_stats && typeof row.tag_stats === "object" ? row.tag_stats : {};
+  const buildings = sumTagKey(tagStats, "building");
+  const highways = sumTagKey(tagStats, "highway");
   const n = {
     uid: get("uid","user_id","id") || null,
     username: row.username || row.user_name || row.name || row.display_name || `uid:${row.uid||"?"}`,
-    nodes_created: +get("nodes_created","node_create","nodes_create"),
-    nodes_modified: +get("nodes_modified","node_modify","nodes_modify"),
-    nodes_deleted: +get("nodes_deleted","node_delete","nodes_deleted"),
-    ways_created: +get("ways_created","way_create","ways_create"),
-    ways_modified: +get("ways_modified","way_modify","ways_modify"),
-    ways_deleted: +get("ways_deleted","way_delete","ways_delete"),
-    rels_created: +get("rels_created","relation_created","relations_created","rel_create"),
-    rels_modified: +get("rels_modified","relation_modified","relations_modified","rel_modify"),
-    rels_deleted: +get("rels_deleted","relation_deleted","relations_deleted","rel_delete"),
-    buildings_created: +get("building_create","buildings_created","building_created"),
-    pois_created: +get("poi_create","pois_created","poi_created","amenity_create","amenities_created"),
-    highways_created: +get("highway_create","highways_created","highway_created","road_create","roads_created"),
+    nodes_created:  +get("nodes_create","nodes_created","node_create"),
+    nodes_modified: +get("nodes_modify","nodes_modified","node_modify"),
+    nodes_deleted:  +get("nodes_delete","nodes_deleted","node_delete"),
+    ways_created:   +get("ways_create","ways_created","way_create"),
+    ways_modified:  +get("ways_modify","ways_modified","way_modify"),
+    ways_deleted:   +get("ways_delete","ways_deleted","way_delete"),
+    rels_created:   +get("rels_create","rels_created","relation_created","relations_created"),
+    rels_modified:  +get("rels_modify","rels_modified","relation_modified","relations_modified"),
+    rels_deleted:   +get("rels_delete","rels_deleted","relation_deleted","relations_deleted"),
+    pois_created:   +get("poi_create","pois_created","poi_created","amenity_create","amenities_created"),
+    pois_modified:  +get("poi_modify","pois_modified","poi_modified"),
+    buildings_created:  buildings.c,
+    buildings_modified: buildings.m,
+    highways_created:   highways.c,
+    highways_modified:  highways.m,
     changesets: +get("changesets","changeset_count","n_changesets","changeset"),
     map_changes: +get("map_changes","total","total_changes"),
     editors: row.editors || row.editor || [],
     hashtags: row.hashtags || row.hashtag || [],
+    tag_stats: tagStats,
   };
   n.created = n.nodes_created + n.ways_created + n.rels_created;
   n.modified = n.nodes_modified + n.ways_modified + n.rels_modified;
@@ -1450,7 +1562,7 @@ async function fetchData({ silent = false } = {}) {
   const url = new URL(ENDPOINT, API_BASE);
   url.searchParams.set("start", isoUTC(start));
   url.searchParams.set("end", isoUTC(end));
-  state.hashtags.forEach(h => url.searchParams.append("hashtags", h));
+  state.hashtags.forEach(h => url.searchParams.append("hashtag", h));
   const ctrl = new AbortController();
   state.inflight = ctrl;
   const timeout = setTimeout(() => ctrl.abort(), 30_000);
@@ -1557,6 +1669,28 @@ function renderKPIs() {
   $("#kpi-buildings-sub").textContent = buildings === 0 ? "not reported in this range" : "new ways tagged building";
   $("#kpi-highways-sub").textContent  = highways === 0  ? "not reported in this range" : "new road / path ways";
 }
+function aggregateTagStats(rows) {
+  const agg = {};
+  rows.forEach(r => {
+    const ts = r.tag_stats;
+    if (!ts || typeof ts !== "object") return;
+    for (const key in ts) {
+      const vals = ts[key];
+      if (!vals || typeof vals !== "object") continue;
+      if (!agg[key]) agg[key] = { values: {}, totalC: 0, totalM: 0 };
+      for (const v in vals) {
+        const cm = vals[v] || {};
+        const c = +(cm.c || 0), m = +(cm.m || 0);
+        if (!agg[key].values[v]) agg[key].values[v] = { c: 0, m: 0 };
+        agg[key].values[v].c += c;
+        agg[key].values[v].m += m;
+        agg[key].totalC += c;
+        agg[key].totalM += m;
+      }
+    }
+  });
+  return agg;
+}
 function renderTagStats() {
   const el = $("#tag-stats");
   const meta = $("#tag-stats-meta");
@@ -1576,14 +1710,6 @@ function renderTagStats() {
     acc.rels += r.rels_created + r.rels_modified + r.rels_deleted;
     return acc;
   }, { created:0, modified:0, deleted:0, changesets:0, nodes:0, ways:0, rels:0 });
-  const tagCounts = new Map();
-  rows.forEach(r => {
-    (r.hashtags || []).forEach(h => {
-      const key = String(h).replace(/^#/, "").toLowerCase();
-      if (!key) return;
-      tagCounts.set(key, (tagCounts.get(key) || 0) + 1);
-    });
-  });
   const cells = [
     ["Created",   totals.created,   "plus-square"],
     ["Modified",  totals.modified,  "edit-3"],
@@ -1601,17 +1727,59 @@ function renderTagStats() {
     </div>
   `).join("");
   html += `</div>`;
-  if (tagCounts.size > 0) {
-    const sortedTags = [...tagCounts.entries()].sort((a,b) => b[1] - a[1]).slice(0, 24);
-    html += `<div class="tag-list">`;
-    html += `<div class="tag-list-label"><i data-lucide="tags"></i>Hashtags seen in this window</div>`;
-    html += sortedTags.map(([t, n]) =>
-      `<span class="tag-pill">#${escapeHtml(t)}<span class="count">${fmt.format(n)} mappers</span></span>`
-    ).join("");
+  const tagAgg = aggregateTagStats(rows);
+  const tagKeys = Object.keys(tagAgg)
+    .map(k => [k, tagAgg[k]])
+    .filter(([, v]) => (v.totalC + v.totalM) > 0)
+    .sort((a, b) => (b[1].totalC + b[1].totalM) - (a[1].totalC + a[1].totalM));
+  const MAX_KEYS = 18;
+  const MAX_VALUES_PER_KEY = 6;
+  let totalValueCount = 0;
+  tagKeys.forEach(([, v]) => { totalValueCount += Object.keys(v.values).length; });
+  if (tagKeys.length > 0) {
+    html += `<div class="tag-breakdown">`;
+    html += `<div class="tag-breakdown-head">`;
+    html += `<div class="tag-breakdown-label"><i data-lucide="tags"></i>Detailed tag breakdown</div>`;
+    html += `<div class="tag-breakdown-meta">${fmt.format(tagKeys.length)} keys · ${fmt.format(totalValueCount)} values</div>`;
+    html += `</div>`;
+    html += `<div class="tag-breakdown-grid">`;
+    html += tagKeys.slice(0, MAX_KEYS).map(([key, data]) => {
+      const sortedValues = Object.entries(data.values)
+        .sort((a, b) => (b[1].c + b[1].m) - (a[1].c + a[1].m));
+      const top = sortedValues.slice(0, MAX_VALUES_PER_KEY);
+      const remaining = sortedValues.length - top.length;
+      let card = `<div class="tag-key-card">`;
+      card += `<div class="tag-key-head">`;
+      card += `<span class="tag-key-name">${escapeHtml(key)}</span>`;
+      card += `<span class="tag-key-totals">`;
+      if (data.totalC) card += `<span class="c">+${fmt.format(data.totalC)}</span>`;
+      if (data.totalM) card += `<span class="m">~${fmt.format(data.totalM)}</span>`;
+      card += `</span>`;
+      card += `</div>`;
+      card += top.map(([val, cm]) => `
+        <div class="tag-value-row">
+          <span class="tag-value-name" title="${escapeHtml(val)}">${escapeHtml(val)}</span>
+          <span class="tag-value-counts">${cm.c ? `<span class="c">+${fmt.format(cm.c)}</span>` : ""}${cm.m ? `<span class="m">~${fmt.format(cm.m)}</span>` : ""}</span>
+        </div>
+      `).join("");
+      if (remaining > 0) {
+        card += `<div class="tag-key-more">+ ${fmt.format(remaining)} more value${remaining === 1 ? "" : "s"}</div>`;
+      }
+      card += `</div>`;
+      return card;
+    }).join("");
+    html += `</div>`;
+    if (tagKeys.length > MAX_KEYS) {
+      html += `<div class="tag-key-more" style="margin-top:10px;text-align:center">+ ${fmt.format(tagKeys.length - MAX_KEYS)} more key${tagKeys.length - MAX_KEYS === 1 ? "" : "s"} not shown</div>`;
+    }
     html += `</div>`;
   } else if (state.hashtags.length === 0) {
     html += `<div class="tag-list">`;
     html += `<div class="tag-list-label"><i data-lucide="info"></i>Add a hashtag above (e.g. <code style="font-family:var(--mono);background:var(--surface-alt);padding:1px 5px;border-radius:3px;">hotosm</code>) to scope these stats.</div>`;
+    html += `</div>`;
+  } else {
+    html += `<div class="tag-list">`;
+    html += `<div class="tag-list-label"><i data-lucide="info"></i>No detailed tag stats available for this window.</div>`;
     html += `</div>`;
   }
   el.innerHTML = html;
