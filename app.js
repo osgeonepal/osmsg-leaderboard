@@ -467,6 +467,9 @@ function renderPodium() {
         div.dataset.user = r.username;
         div.setAttribute("role", "button"); div.setAttribute("tabindex", "0");
         div.setAttribute("aria-label", `View ${r.username} contributions`);
+        const created = (r.nodes_created || 0) + (r.ways_created || 0) + (r.rels_created || 0);
+        const modified = (r.nodes_modified || 0) + (r.ways_modified || 0) + (r.rels_modified || 0);
+        const deleted = (r.nodes_deleted || 0) + (r.ways_deleted || 0) + (r.rels_deleted || 0);
         div.innerHTML = `
       <span class="pod-rank">${place}</span>
       <span class="pod-avatar" data-osm-uid="${r.uid}" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
@@ -474,7 +477,12 @@ function renderPodium() {
       <span class="pod-score-wrap">
         <span class="pod-score">${fmt.format(r.map_changes)}</span>
         <div class="pod-score-label">changes</div>
-      </span>`;
+      </span>
+      <div class="pod-mini" aria-label="Created, modified, deleted">
+        <span class="c" title="created"><i data-lucide="plus"></i>${fmt.format(created)}</span>
+        <span class="m" title="modified"><i data-lucide="pencil"></i>${fmt.format(modified)}</span>
+        <span class="d" title="deleted"><i data-lucide="minus"></i>${fmt.format(deleted)}</span>
+      </div>`;
         applyAvatar(div.querySelector(".pod-avatar"), r.uid, initials(r.username));
         div.addEventListener("click", () => openUserModal(r.username));
         div.addEventListener("keydown", (e) => {
