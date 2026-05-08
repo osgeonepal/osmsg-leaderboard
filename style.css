@@ -78,8 +78,9 @@ body {
     font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.5;
-    min-height: 100vh;
+    min-height: 100dvh;
     overflow-x: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
     -webkit-font-smoothing: antialiased;
     background-attachment: fixed;
     background-image:
@@ -1259,7 +1260,7 @@ main > section { min-width: 0; }
 footer {
     max-width: var(--container);
     margin: 0 auto;
-    padding: 32px 24px;
+    padding: 32px 24px calc(32px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--bd);
     font-size: 13px;
     color: var(--muted);
