@@ -324,7 +324,7 @@ function aggregateTagStats(rows) {
     }
     return agg;
 }
-function tagBreakdownHtml(agg, { maxKeys = 18 } = {}) {
+function tagBreakdownHtml(agg, { maxKeys = 10 } = {}) {
     const keys = Object.entries(agg)
         .filter(([, v]) => v.totalC + v.totalM > 0)
         .sort((a, b) => (b[1].totalC + b[1].totalM) - (a[1].totalC + a[1].totalM));
