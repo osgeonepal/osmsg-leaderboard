@@ -143,16 +143,18 @@
     <section aria-label="Overview">
       <div id="overview">
         <div class="overview-strip" id="ov-strip-totals"></div>
-        <div class="overview-strip" id="ov-strip" style="margin-top:6px"></div>
         <div class="ov-toggle">
           <span class="ov-breakdown-meta" id="ov-breakdown-meta"></span>
           <button type="button" class="ov-toggle-btn" id="ov-toggle-btn" aria-expanded="false"
-            aria-controls="ov-breakdown">
-            <i data-lucide="tags"></i><span id="ov-toggle-label">Show tag breakdown</span><i
+            aria-controls="ov-details">
+            <i data-lucide="plus"></i><span id="ov-toggle-label">Show details</span><i
               data-lucide="chevron-down"></i>
           </button>
         </div>
-        <div class="ov-breakdown" id="ov-breakdown" hidden></div>
+        <div id="ov-details" hidden>
+          <div class="overview-strip" id="ov-strip" style="margin-top:6px"></div>
+          <div class="ov-breakdown" id="ov-breakdown"></div>
+        </div>
       </div>
     </section>
 

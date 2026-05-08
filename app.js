@@ -421,11 +421,12 @@ const rowTotals = (rows) => rows.reduce((a, r) => {
 
 function renderOverview() {
     const strip = $("#ov-strip"), totals = $("#ov-strip-totals"), breakdown = $("#ov-breakdown");
+    const details = $("#ov-details");
     const meta = $("#ov-breakdown-meta"), btn = $("#ov-toggle-btn"), label = $("#ov-toggle-label");
     if (!state.rows.length) {
-        totals.innerHTML = "";
-        strip.innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">No data in this window. Try a wider time range or a different hashtag.</div>`;
-        breakdown.innerHTML = ""; breakdown.hidden = true;
+        totals.innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">No data in this window. Try a wider time range or a different hashtag.</div>`;
+        strip.innerHTML = "";
+        breakdown.innerHTML = ""; details.hidden = true;
         btn.setAttribute("aria-expanded", "false"); btn.disabled = true; meta.textContent = "";
         return;
     }
@@ -436,14 +437,14 @@ function renderOverview() {
     if (keyCount) {
         breakdown.innerHTML = html;
         meta.textContent = `${fmt.format(keyCount)} tag key${keyCount === 1 ? "" : "s"} · ${fmt.format(valueCount)} value${valueCount === 1 ? "" : "s"} available`;
-        btn.disabled = false;
     } else {
         breakdown.innerHTML = `<div class="tag-stats-empty">No detailed tag stats reported in this window.</div>`;
-        meta.textContent = "no tag breakdown available"; btn.disabled = true;
+        meta.textContent = "element breakdown only";
     }
+    btn.disabled = false;
     const expanded = btn.getAttribute("aria-expanded") === "true";
-    breakdown.hidden = !expanded;
-    label.textContent = expanded ? "Hide tag breakdown" : "Show tag breakdown";
+    details.hidden = !expanded;
+    label.textContent = expanded ? "Hide details" : "Show details";
     refreshIcons();
 }
 
@@ -830,8 +831,11 @@ $("#ov-toggle-btn").addEventListener("click", () => {
     const btn = $("#ov-toggle-btn"); if (btn.disabled) return;
     const expanded = btn.getAttribute("aria-expanded") === "true";
     btn.setAttribute("aria-expanded", expanded ? "false" : "true");
-    $("#ov-breakdown").hidden = expanded;
-    $("#ov-toggle-label").textContent = expanded ? "Show tag breakdown" : "Hide tag breakdown";
+    $("#ov-details").hidden = expanded;
+    $("#ov-toggle-label").textContent = expanded ? "Show details" : "Hide details";
+    const ico = btn.querySelector('[data-lucide="plus"], [data-lucide="minus"]');
+    if (ico) ico.setAttribute("data-lucide", expanded ? "plus" : "minus");
+    refreshIcons(btn);
 });
 const userModal = $("#user-modal");
 $("#user-modal-close").addEventListener("click", closeUserModal);
