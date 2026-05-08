@@ -43,7 +43,14 @@
     --shadow-s2: 0 1px 0 rgba(26, 36, 33, 0.05), 0 4px 12px rgba(26, 36, 33, 0.06);
     --shadow-pop: 0 8px 24px rgba(26, 36, 33, 0.10), 0 2px 4px rgba(26, 36, 33, 0.06);
 
-    --container: 1320px;
+    --container: min(75vw, 1400px);
+}
+
+@media (max-width: 1100px) {
+    :root { --container: 88vw; }
+}
+@media (max-width: 640px) {
+    :root { --container: 94vw; }
 }
 
 @keyframes rot { to { transform: rotate(360deg); } }
@@ -161,6 +168,45 @@ a:hover { text-decoration: underline; text-decoration-color: var(--green-soft); 
 }
 
 /* status pill */
+.header-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    margin-left: auto;
+}
+.clock-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border: 1px solid var(--bd);
+    border-radius: 9999px;
+    background: var(--surface);
+    color: var(--ink-2);
+    white-space: nowrap;
+    user-select: none;
+    transition: all 0.2s;
+}
+.clock-pill:hover { border-color: var(--bd-strong); }
+.clock-pill .v {
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.clock-pill .tz {
+    font-size: 10.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding-left: 6px;
+    margin-left: 2px;
+    border-left: 1px solid var(--bd);
+}
 .status {
     display: inline-flex;
     align-items: center;
@@ -1250,6 +1296,9 @@ footer {
     .brand-title { font-size: 16px; }
     .brand-sub { font-size: 9.5px; letter-spacing: 0.1em; }
     .status { padding: 5px 10px; font-size: 12px; }
+    .header-tools { gap: 6px; }
+    .clock-pill { padding: 5px 10px; font-size: 12px; gap: 6px; }
+    .clock-pill .tz { display: none; }
 
     .hero { padding: 24px 14px 16px; }
     .eyebrow { font-size: 10px; margin-bottom: 8px; }
@@ -1263,10 +1312,6 @@ footer {
         padding: 0 14px;
         margin: 4px auto 12px;
         gap: 6px;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        flex-wrap: initial;
-        overflow: visible;
     }
     .wb-item {
         padding: 6px 10px;
@@ -1331,6 +1376,7 @@ footer {
 /* very small: <= 380px - hide the brand subtitle */
 @media (max-width: 380px) {
     .brand-sub { display: none; }
+    .clock-pill { display: none; }
     .overview-strip { grid-template-columns: 1fr 1fr; }
     .pod-rank { font-size: 16px; }
     .wb-item .k { display: none; }

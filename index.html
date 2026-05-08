@@ -75,11 +75,18 @@
           <span class="brand-sub block">Leaderboard · OSGeo Nepal</span>
         </span>
       </a>
-      <button id="status-pill" class="status" data-state="loading" aria-pressed="true" aria-label="Connection status">
-        <span class="dot" aria-hidden="true"></span>
-        <i data-lucide="loader" id="status-icon" class="ico-sm ico-spin"></i>
-        <span id="status-text">Connecting</span>
-      </button>
+      <div class="header-tools">
+        <div class="clock-pill" id="header-clock" aria-label="Local time">
+          <i data-lucide="clock" class="ico-sm"></i>
+          <span class="v" id="wb-localtime">…</span>
+          <span class="tz" id="wb-tzname"></span>
+        </div>
+        <button id="status-pill" class="status" data-state="loading" aria-pressed="true" aria-label="Connection status">
+          <span class="dot" aria-hidden="true"></span>
+          <i data-lucide="loader" id="status-icon" class="ico-sm ico-spin"></i>
+          <span id="status-text">Connecting</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -129,8 +136,6 @@
         class="k">Window</span><span class="v" id="wb-window-text">…</span></div>
     <div class="wb-item" id="last-updated" aria-live="polite"><i data-lucide="refresh-cw" class="ico-sm"></i><span
         class="k">Updated</span><span class="v" id="last-updated-text">never</span></div>
-    <div class="wb-item"><i data-lucide="clock" class="ico-sm"></i><span class="k">Your time</span><span class="v"
-        id="wb-localtime">…</span><span class="tz" id="wb-tzname"></span></div>
     <div class="wb-item"><i data-lucide="cloud" class="ico-sm"></i><span class="k">API</span><span
         class="v">osmsg.osgeonepal.org</span></div>
   </div>
