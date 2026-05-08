@@ -359,27 +359,24 @@
   }
   .windowbar {
     max-width: 1320px; margin: 0 auto;
-    padding: 14px var(--pad) 0;
-    display: flex; gap: 10px; flex-wrap: wrap;
+    padding: 8px var(--pad) 0;
+    display: flex; gap: 14px; flex-wrap: wrap;
     align-items: center;
-    font-size: 12.5px;
-    color: var(--ink-2);
+    font-size: 11.5px;
+    color: var(--muted);
   }
   .wb-item {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    padding: 6px 12px;
-    color: var(--ink-2);
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--muted);
   }
-  .wb-item [data-lucide] { color: var(--green-soft); }
-  .wb-item .k { color: var(--muted); margin-right: 3px; }
+  .wb-item [data-lucide] { color: var(--green-soft); width: 12px; height: 12px; }
+  .wb-item .k { color: var(--muted); }
   .wb-item .v {
     font-family: var(--mono); font-weight: 500;
-    color: var(--ink); font-size: 12px;
+    color: var(--ink-2); font-size: 11.5px;
   }
-  .wb-item .tz { color: var(--muted); margin-left: 4px; font-size: 11px; }
+  .wb-item .tz { color: var(--muted); margin-left: 3px; font-size: 10.5px; }
+  .wb-sep { color: var(--border-strong); user-select: none; }
   main {
     max-width: 1320px; margin: 0 auto;
     padding: 28px var(--pad) 80px;
@@ -609,80 +606,225 @@
     color: var(--muted);
     font-style: italic;
   }
+  .tag-key-bar {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(229,224,213,0.6);
+    overflow: hidden;
+    display: flex;
+    margin: 6px 0 8px;
+  }
+  .tag-key-bar .seg-c { background: var(--green-deep); }
+  .tag-key-bar .seg-m { background: #C7B97A; }
+  .tag-value-bar {
+    grid-column: 1 / -1;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(229,224,213,0.5);
+    overflow: hidden;
+    display: flex;
+    margin-top: 2px;
+  }
+  .tag-value-bar .seg-c { background: var(--green-deep); }
+  .tag-value-bar .seg-m { background: #C7B97A; }
+  .tag-value-row { grid-template-columns: 1fr auto; row-gap: 0; }
+  .tag-value-counts .c { background: rgba(31,77,46,0.10); padding: 1px 6px; border-radius: 999px; }
+  .tag-value-counts .m { background: rgba(199,185,122,0.22); color: #6B5E1F; padding: 1px 6px; border-radius: 999px; }
+  .overview {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 14px 18px;
+  }
+  .overview-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 4px 18px;
+    align-items: end;
+  }
+  .ov-cell { display: flex; flex-direction: column; gap: 2px; padding: 6px 0; }
+  .ov-cell .lbl {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .ov-cell .lbl [data-lucide] { width: 12px; height: 12px; color: var(--green-soft); }
+  .ov-cell .val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .ov-cell.primary .val { color: var(--green-deep); font-size: 22px; }
+  .ov-toggle {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .ov-toggle-btn {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-2);
+    border-radius: var(--r-sm);
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ov-toggle-btn:hover { border-color: var(--green-soft); background: var(--green-tint); }
+  .ov-toggle-btn [data-lucide] { width: 14px; height: 14px; transition: transform 0.2s; }
+  .ov-toggle-btn[aria-expanded="true"] [data-lucide] { transform: rotate(180deg); }
+  .ov-breakdown-meta {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .ov-breakdown[hidden] { display: none; }
+  .ov-breakdown { margin-top: 14px; }
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(26,36,33,0.45);
+    z-index: 100;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 5vh 16px;
+    overflow-y: auto;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-pop);
+    width: 100%;
+    max-width: 880px;
+    overflow: hidden;
+    animation: pop 0.18s ease-out;
+  }
+  @keyframes pop { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+  }
+  .modal-head .pod-avatar { width: 38px; height: 38px; font-size: 15px; }
+  .modal-title { flex: 1; min-width: 0; }
+  .modal-title .name {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .modal-title .name a { color: inherit; }
+  .modal-title .sub {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: var(--mono);
+  }
+  .modal-close {
+    appearance: none;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-2);
+    border-radius: var(--r-sm);
+    width: 32px; height: 32px;
+    display: grid; place-items: center;
+    cursor: pointer;
+  }
+  .modal-close:hover { background: var(--green-tint); border-color: var(--green-soft); }
+  .modal-body { padding: 16px 20px 20px; }
+  .modal-body .ov-cell .val { font-size: 16px; }
+  .modal-body .ov-cell.primary .val { font-size: 20px; }
   .podium {
     display: grid;
-    grid-template-columns: 1fr 1.2fr 1fr;
-    align-items: end;
-    gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
   }
   .pod {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--r-lg);
-    padding: 22px 18px 18px;
-    text-align: center;
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: center;
+    gap: 10px;
     position: relative;
-    transition: transform 0.2s;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
   }
-  .pod:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
+  .pod:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
   .pod-rank {
-    position: absolute;
-    top: -14px; left: 50%; transform: translateX(-50%);
-    width: 32px; height: 32px;
-    background: var(--surface);
-    border: 1px solid var(--border);
+    width: 22px; height: 22px;
     border-radius: 50%;
     display: grid; place-items: center;
     font-family: var(--serif);
     font-weight: 600;
-    font-size: 16px;
-    color: var(--ink);
+    font-size: 12px;
+    color: white;
+    background: var(--green-soft);
   }
-  .pod-1 .pod-rank { background: var(--gold); color: white; border-color: var(--gold); }
-  .pod-2 .pod-rank { background: var(--silver); color: white; border-color: var(--silver); }
-  .pod-3 .pod-rank { background: var(--bronze); color: white; border-color: var(--bronze); }
-  .pod-1 { background: linear-gradient(180deg, #FBF6E2 0%, var(--surface) 60%); border-color: rgba(184,134,11,0.2); padding-top: 28px; }
-  .pod-2 { background: linear-gradient(180deg, #F1F1F0 0%, var(--surface) 60%); }
-  .pod-3 { background: linear-gradient(180deg, #F4E9DD 0%, var(--surface) 60%); }
-  .pod-1 .trophy { color: var(--gold); }
-  .pod-2 .trophy { color: var(--silver); }
-  .pod-3 .trophy { color: var(--bronze); }
+  .pod-1 .pod-rank { background: var(--gold); }
+  .pod-2 .pod-rank { background: var(--silver); }
+  .pod-3 .pod-rank { background: var(--bronze); }
+  .pod-1 { border-color: rgba(184,134,11,0.35); box-shadow: inset 3px 0 0 var(--gold); }
+  .pod-2 { border-color: rgba(138,138,138,0.35); box-shadow: inset 3px 0 0 var(--silver); }
+  .pod-3 { border-color: rgba(166,90,42,0.30); box-shadow: inset 3px 0 0 var(--bronze); }
   .pod-avatar {
-    width: 48px; height: 48px; margin: 4px auto 10px;
+    width: 28px; height: 28px;
     border-radius: 50%;
     background: var(--green-soft);
     color: white;
     display: grid; place-items: center;
     font-family: var(--serif);
-    font-weight: 500; font-size: 20px;
+    font-weight: 500; font-size: 12px;
   }
-  .pod-1 .pod-avatar { background: var(--gold); }
-  .pod-3 .pod-avatar { background: var(--bronze); }
   .pod-name {
     font-weight: 600;
-    font-size: 14.5px;
-    margin-bottom: 6px;
-    word-break: break-word;
+    font-size: 13px;
     color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
-  .pod-name a { color: inherit; }
+  .pod-name a { color: inherit; text-decoration: none; }
+  .pod-name a:hover { text-decoration: underline; }
   .pod-score {
-    font-family: var(--serif);
-    font-variation-settings: "opsz" 72;
-    font-size: 28px;
-    font-weight: 400;
-    letter-spacing: -0.02em;
-    line-height: 1;
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--green-deep);
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
-  .pod-1 .pod-score { font-size: 36px; }
   .pod-score-label {
-    font-size: 10.5px; text-transform: uppercase;
+    font-size: 9.5px; text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--muted);
-    margin-top: 5px;
     font-weight: 600;
+    margin-top: 1px;
   }
+  .pod-score-wrap { text-align: right; }
   .table-wrap {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -1099,38 +1241,26 @@
   </div>
 </div>
 <main role="main">
-  <section class="section" aria-labelledby="sum-title">
+  <section class="section" aria-labelledby="ov-title">
     <div class="section-header">
-      <h2 id="sum-title" class="section-title"><i data-lucide="activity"></i> Snapshot</h2>
+      <h2 id="ov-title" class="section-title"><i data-lucide="activity"></i> Overview</h2>
       <span id="range-label" class="section-meta">last 24 hours</span>
     </div>
-    <div class="stats-grid" id="stats-grid">
-      <article class="stat">
-        <div class="stat-head"><i data-lucide="users"></i><span class="stat-label">Mappers</span></div>
-        <div class="stat-value" id="kpi-mappers">…</div>
-        <div class="stat-sub">unique contributors</div>
-      </article>
-      <article class="stat">
-        <div class="stat-head"><i data-lucide="map-pin"></i><span class="stat-label">POIs created</span></div>
-        <div class="stat-value" id="kpi-pois">…</div>
-        <div class="stat-sub" id="kpi-pois-sub">new points of interest</div>
-      </article>
-      <article class="stat">
-        <div class="stat-head"><i data-lucide="building-2"></i><span class="stat-label">Buildings created</span></div>
-        <div class="stat-value" id="kpi-buildings">…</div>
-        <div class="stat-sub" id="kpi-buildings-sub">new ways tagged building</div>
-      </article>
-      <article class="stat">
-        <div class="stat-head"><i data-lucide="route"></i><span class="stat-label">Highways created</span></div>
-        <div class="stat-value" id="kpi-highways">…</div>
-        <div class="stat-sub" id="kpi-highways-sub">new road / path ways</div>
-      </article>
+    <div class="overview" id="overview">
+      <div class="overview-strip" id="ov-strip"></div>
+      <div class="ov-toggle">
+        <span class="ov-breakdown-meta" id="ov-breakdown-meta"></span>
+        <button type="button" class="ov-toggle-btn" id="ov-toggle-btn" aria-expanded="false" aria-controls="ov-breakdown">
+          <i data-lucide="tags"></i><span id="ov-toggle-label">Show tag breakdown</span><i data-lucide="chevron-down"></i>
+        </button>
+      </div>
+      <div class="ov-breakdown" id="ov-breakdown" hidden></div>
     </div>
   </section>
   <section class="section" aria-labelledby="podium-title">
     <div class="section-header">
-      <h2 id="podium-title" class="section-title"><i data-lucide="trophy"></i> Podium</h2>
-      <span class="section-meta">top three by total map changes</span>
+      <h2 id="podium-title" class="section-title"><i data-lucide="trophy"></i> Top three</h2>
+      <span class="section-meta">by total map changes · click to view contributions</span>
     </div>
     <div class="podium" id="podium" aria-live="polite"></div>
   </section>
@@ -1192,16 +1322,22 @@
       </div>
     </div>
   </section>
-  <section class="section" id="tag-stats-section" aria-labelledby="tag-title">
-    <div class="section-header">
-      <h2 id="tag-title" class="section-title"><i data-lucide="hash"></i> Hashtag stats</h2>
-      <span class="section-meta" id="tag-stats-meta">scoped to current query</span>
-    </div>
-    <div class="tag-stats" id="tag-stats">
-      <div class="tag-stats-empty">Loading hashtag stats…</div>
-    </div>
-  </section>
 </main>
+<div class="modal-backdrop" id="user-modal" role="dialog" aria-modal="true" aria-labelledby="user-modal-name" hidden>
+  <div class="modal" role="document">
+    <div class="modal-head">
+      <span class="pod-avatar" id="user-modal-avatar">·</span>
+      <div class="modal-title">
+        <div class="name" id="user-modal-name">…</div>
+        <div class="sub" id="user-modal-sub"></div>
+      </div>
+      <button type="button" class="modal-close" id="user-modal-close" aria-label="Close">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    <div class="modal-body" id="user-modal-body"></div>
+  </div>
+</div>
 <footer>
   <div class="footer-inner">
     <div>
@@ -1232,7 +1368,6 @@ const state = {
   sort: { key: "map_changes", dir: "desc" },
   filter: "all",
   search: "",
-  expanded: new Set(),
   windowStart: null,
   windowEnd: null,
   lastFetched: null,
@@ -1637,8 +1772,7 @@ function render() {
   applyDerivedFilters();
   const tagSuffix = state.hashtags.length ? ` · #${state.hashtags.join(" #")}` : "";
   $("#range-label").textContent = RANGE_LABELS[state.range] + tagSuffix;
-  renderKPIs();
-  renderTagStats();
+  renderOverview();
   renderPodium();
   renderTable();
   renderWindowBar();
@@ -1655,19 +1789,6 @@ function animate(el, target) {
     else el.dataset.val = String(target);
   }
   requestAnimationFrame(tick);
-}
-function renderKPIs() {
-  const rows = state.rows;
-  const buildings = rows.reduce((s,r)=>s+(r.buildings_created||0), 0);
-  const pois = rows.reduce((s,r)=>s+(r.pois_created||0), 0);
-  const highways = rows.reduce((s,r)=>s+(r.highways_created||0), 0);
-  animate($("#kpi-mappers"), rows.length);
-  animate($("#kpi-pois"), pois);
-  animate($("#kpi-buildings"), buildings);
-  animate($("#kpi-highways"), highways);
-  $("#kpi-pois-sub").textContent      = pois === 0      ? "not reported in this range" : "new points of interest";
-  $("#kpi-buildings-sub").textContent = buildings === 0 ? "not reported in this range" : "new ways tagged building";
-  $("#kpi-highways-sub").textContent  = highways === 0  ? "not reported in this range" : "new road / path ways";
 }
 function aggregateTagStats(rows) {
   const agg = {};
@@ -1691,106 +1812,127 @@ function aggregateTagStats(rows) {
   });
   return agg;
 }
-function renderTagStats() {
-  const el = $("#tag-stats");
-  const meta = $("#tag-stats-meta");
-  const rows = state.rows;
-  if (rows.length === 0) {
-    el.innerHTML = `<div class="tag-stats-empty">No data in this window. Try a wider time range or a different hashtag.</div>`;
-    meta.textContent = state.hashtags.length ? `for #${state.hashtags.join(", #")}` : "scoped to current query";
-    return;
+function tagBreakdownHtml(tagAgg, opts = {}) {
+  const { maxKeys = 18, maxValuesPerKey = 6 } = opts;
+  const keys = Object.keys(tagAgg)
+    .map(k => [k, tagAgg[k]])
+    .filter(([, v]) => (v.totalC + v.totalM) > 0)
+    .sort((a, b) => (b[1].totalC + b[1].totalM) - (a[1].totalC + a[1].totalM));
+  if (keys.length === 0) return { html: "", keyCount: 0, valueCount: 0 };
+  let valueCount = 0;
+  keys.forEach(([, v]) => { valueCount += Object.keys(v.values).length; });
+  let html = `<div class="tag-breakdown-grid">`;
+  html += keys.slice(0, maxKeys).map(([key, data]) => {
+    const total = data.totalC + data.totalM;
+    const cPct = total ? (data.totalC / total) * 100 : 0;
+    const mPct = total ? (data.totalM / total) * 100 : 0;
+    const sortedValues = Object.entries(data.values)
+      .sort((a, b) => (b[1].c + b[1].m) - (a[1].c + a[1].m));
+    const top = sortedValues.slice(0, maxValuesPerKey);
+    const remaining = sortedValues.length - top.length;
+    let card = `<div class="tag-key-card">`;
+    card += `<div class="tag-key-head">`;
+    card += `<span class="tag-key-name">${escapeHtml(key)}</span>`;
+    card += `<span class="tag-key-totals">`;
+    if (data.totalC) card += `<span class="c">+${fmt.format(data.totalC)}</span>`;
+    if (data.totalM) card += `<span class="m">~${fmt.format(data.totalM)}</span>`;
+    card += `</span></div>`;
+    card += `<div class="tag-key-bar" title="${data.totalC} created · ${data.totalM} modified">`;
+    if (cPct > 0) card += `<div class="seg-c" style="width:${cPct}%"></div>`;
+    if (mPct > 0) card += `<div class="seg-m" style="width:${mPct}%"></div>`;
+    card += `</div>`;
+    card += top.map(([val, cm]) => {
+      const t = cm.c + cm.m;
+      const cP = t ? (cm.c / t) * 100 : 0;
+      const mP = t ? (cm.m / t) * 100 : 0;
+      return `
+        <div class="tag-value-row">
+          <span class="tag-value-name" title="${escapeHtml(val)}">${escapeHtml(val)}</span>
+          <span class="tag-value-counts">${cm.c ? `<span class="c">+${fmt.format(cm.c)}</span>` : ""}${cm.m ? `<span class="m">~${fmt.format(cm.m)}</span>` : ""}</span>
+          <span class="tag-value-bar">${cP > 0 ? `<span class="seg-c" style="width:${cP}%"></span>` : ""}${mP > 0 ? `<span class="seg-m" style="width:${mP}%"></span>` : ""}</span>
+        </div>
+      `;
+    }).join("");
+    if (remaining > 0) {
+      card += `<div class="tag-key-more">+ ${fmt.format(remaining)} more value${remaining === 1 ? "" : "s"}</div>`;
+    }
+    card += `</div>`;
+    return card;
+  }).join("");
+  html += `</div>`;
+  if (keys.length > maxKeys) {
+    html += `<div class="tag-key-more" style="margin-top:10px;text-align:center">+ ${fmt.format(keys.length - maxKeys)} more key${keys.length - maxKeys === 1 ? "" : "s"} not shown</div>`;
   }
-  const totals = rows.reduce((acc, r) => {
+  return { html, keyCount: keys.length, valueCount };
+}
+function overviewCellsHtml(totals, mappers) {
+  const cells = [
+    ["Mappers",     mappers,            "users",                  true],
+    ["Changesets",  totals.changesets,  "git-commit-horizontal",  false],
+    ["Created",     totals.created,     "plus-square",            false],
+    ["Modified",    totals.modified,    "edit-3",                 false],
+    ["Deleted",     totals.deleted,     "trash-2",                false],
+    ["Buildings",   totals.buildings,   "building-2",             false],
+    ["Highways",    totals.highways,    "route",                  false],
+    ["POIs",        totals.pois,        "map-pin",                false],
+  ];
+  return cells.map(([l, v, ic, primary]) => `
+    <div class="ov-cell${primary ? " primary" : ""}">
+      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+      <div class="val">${fmt.format(v || 0)}</div>
+    </div>
+  `).join("");
+}
+function rowTotals(rows) {
+  return rows.reduce((acc, r) => {
     acc.created += r.created;
     acc.modified += r.modified;
     acc.deleted += r.deleted;
     acc.changesets += r.changesets;
-    acc.nodes += r.nodes_created + r.nodes_modified + r.nodes_deleted;
-    acc.ways += r.ways_created + r.ways_modified + r.ways_deleted;
-    acc.rels += r.rels_created + r.rels_modified + r.rels_deleted;
+    acc.buildings += r.buildings_created || 0;
+    acc.highways += r.highways_created || 0;
+    acc.pois += r.pois_created || 0;
     return acc;
-  }, { created:0, modified:0, deleted:0, changesets:0, nodes:0, ways:0, rels:0 });
-  const cells = [
-    ["Created",   totals.created,   "plus-square"],
-    ["Modified",  totals.modified,  "edit-3"],
-    ["Deleted",   totals.deleted,   "trash-2"],
-    ["Changesets",totals.changesets,"git-commit-horizontal"],
-    ["Nodes",     totals.nodes,     "circle-dot"],
-    ["Ways",      totals.ways,      "spline"],
-    ["Relations", totals.rels,      "share-2"],
-  ];
-  let html = `<div class="tag-stats-grid">`;
-  html += cells.map(([l,v,ic]) => `
-    <div class="tag-stat-cell">
-      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
-      <div class="val">${fmt.format(v||0)}</div>
-    </div>
-  `).join("");
-  html += `</div>`;
-  const tagAgg = aggregateTagStats(rows);
-  const tagKeys = Object.keys(tagAgg)
-    .map(k => [k, tagAgg[k]])
-    .filter(([, v]) => (v.totalC + v.totalM) > 0)
-    .sort((a, b) => (b[1].totalC + b[1].totalM) - (a[1].totalC + a[1].totalM));
-  const MAX_KEYS = 18;
-  const MAX_VALUES_PER_KEY = 6;
-  let totalValueCount = 0;
-  tagKeys.forEach(([, v]) => { totalValueCount += Object.keys(v.values).length; });
-  if (tagKeys.length > 0) {
-    html += `<div class="tag-breakdown">`;
-    html += `<div class="tag-breakdown-head">`;
-    html += `<div class="tag-breakdown-label"><i data-lucide="tags"></i>Detailed tag breakdown</div>`;
-    html += `<div class="tag-breakdown-meta">${fmt.format(tagKeys.length)} keys · ${fmt.format(totalValueCount)} values</div>`;
-    html += `</div>`;
-    html += `<div class="tag-breakdown-grid">`;
-    html += tagKeys.slice(0, MAX_KEYS).map(([key, data]) => {
-      const sortedValues = Object.entries(data.values)
-        .sort((a, b) => (b[1].c + b[1].m) - (a[1].c + a[1].m));
-      const top = sortedValues.slice(0, MAX_VALUES_PER_KEY);
-      const remaining = sortedValues.length - top.length;
-      let card = `<div class="tag-key-card">`;
-      card += `<div class="tag-key-head">`;
-      card += `<span class="tag-key-name">${escapeHtml(key)}</span>`;
-      card += `<span class="tag-key-totals">`;
-      if (data.totalC) card += `<span class="c">+${fmt.format(data.totalC)}</span>`;
-      if (data.totalM) card += `<span class="m">~${fmt.format(data.totalM)}</span>`;
-      card += `</span>`;
-      card += `</div>`;
-      card += top.map(([val, cm]) => `
-        <div class="tag-value-row">
-          <span class="tag-value-name" title="${escapeHtml(val)}">${escapeHtml(val)}</span>
-          <span class="tag-value-counts">${cm.c ? `<span class="c">+${fmt.format(cm.c)}</span>` : ""}${cm.m ? `<span class="m">~${fmt.format(cm.m)}</span>` : ""}</span>
-        </div>
-      `).join("");
-      if (remaining > 0) {
-        card += `<div class="tag-key-more">+ ${fmt.format(remaining)} more value${remaining === 1 ? "" : "s"}</div>`;
-      }
-      card += `</div>`;
-      return card;
-    }).join("");
-    html += `</div>`;
-    if (tagKeys.length > MAX_KEYS) {
-      html += `<div class="tag-key-more" style="margin-top:10px;text-align:center">+ ${fmt.format(tagKeys.length - MAX_KEYS)} more key${tagKeys.length - MAX_KEYS === 1 ? "" : "s"} not shown</div>`;
-    }
-    html += `</div>`;
-  } else if (state.hashtags.length === 0) {
-    html += `<div class="tag-list">`;
-    html += `<div class="tag-list-label"><i data-lucide="info"></i>Add a hashtag above (e.g. <code style="font-family:var(--mono);background:var(--surface-alt);padding:1px 5px;border-radius:3px;">hotosm</code>) to scope these stats.</div>`;
-    html += `</div>`;
-  } else {
-    html += `<div class="tag-list">`;
-    html += `<div class="tag-list-label"><i data-lucide="info"></i>No detailed tag stats available for this window.</div>`;
-    html += `</div>`;
+  }, { created:0, modified:0, deleted:0, changesets:0, buildings:0, highways:0, pois:0 });
+}
+function renderOverview() {
+  const strip = $("#ov-strip");
+  const breakdown = $("#ov-breakdown");
+  const breakdownMeta = $("#ov-breakdown-meta");
+  const toggleBtn = $("#ov-toggle-btn");
+  const toggleLabel = $("#ov-toggle-label");
+  const rows = state.rows;
+  if (rows.length === 0) {
+    strip.innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">No data in this window. Try a wider time range or a different hashtag.</div>`;
+    breakdown.innerHTML = "";
+    breakdown.hidden = true;
+    toggleBtn.setAttribute("aria-expanded", "false");
+    toggleBtn.disabled = true;
+    breakdownMeta.textContent = "";
+    return;
   }
-  el.innerHTML = html;
-  meta.textContent = state.hashtags.length
-    ? `for #${state.hashtags.join(", #")} · ${RANGE_LABELS[state.range]}`
-    : `global · ${RANGE_LABELS[state.range]}`;
-  refreshIcons(el);
+  const totals = rowTotals(rows);
+  strip.innerHTML = overviewCellsHtml(totals, rows.length);
+  const tagAgg = aggregateTagStats(rows);
+  const { html, keyCount, valueCount } = tagBreakdownHtml(tagAgg);
+  if (keyCount > 0) {
+    breakdown.innerHTML = html;
+    breakdownMeta.textContent = `${fmt.format(keyCount)} tag key${keyCount === 1 ? "" : "s"} · ${fmt.format(valueCount)} value${valueCount === 1 ? "" : "s"} available`;
+    toggleBtn.disabled = false;
+  } else {
+    breakdown.innerHTML = `<div class="tag-stats-empty">No detailed tag stats reported in this window.</div>`;
+    breakdownMeta.textContent = "no tag breakdown available";
+    toggleBtn.disabled = true;
+  }
+  const expanded = toggleBtn.getAttribute("aria-expanded") === "true";
+  breakdown.hidden = !expanded;
+  toggleLabel.textContent = expanded ? "Hide tag breakdown" : "Show tag breakdown";
+  refreshIcons(strip);
+  refreshIcons(breakdown);
+  refreshIcons(toggleBtn);
 }
 function renderPodium() {
   const top3 = state.rows.slice().sort((a,b)=>b.map_changes-a.map_changes).slice(0,3);
-  const order = [1,0,2];
   const el = $("#podium");
   el.innerHTML = "";
   if (top3.length === 0) {
@@ -1798,48 +1940,121 @@ function renderPodium() {
     refreshIcons(el);
     return;
   }
-  order.forEach((idx) => {
-    const r = top3[idx];
-    if (!r) {
-      const ph = document.createElement("div");
-      ph.className = "pod";
-      ph.style.opacity = "0.4";
-      ph.innerHTML = `<div class="pod-rank">·</div><div class="pod-avatar">·</div><div class="pod-name">·</div><div class="pod-score">0</div>`;
-      el.appendChild(ph);
-      return;
-    }
-    const place = idx+1;
-    const trophyIcon = place === 1 ? "crown" : place === 2 ? "medal" : "award";
+  for (let i = 0; i < 3; i++) {
+    const r = top3[i];
+    const place = i + 1;
     const div = document.createElement("div");
     div.className = `pod pod-${place} fade-in`;
+    if (!r) {
+      div.style.opacity = "0.4";
+      div.innerHTML = `<span class="pod-rank">${place}</span><span class="pod-avatar">·</span><span class="pod-name">—</span><span class="pod-score-wrap"><span class="pod-score">0</span></span>`;
+      el.appendChild(div);
+      continue;
+    }
+    div.dataset.user = r.username;
+    div.setAttribute("role", "button");
+    div.setAttribute("tabindex", "0");
+    div.setAttribute("aria-label", `View ${r.username} contributions`);
     div.innerHTML = `
-      <div class="pod-rank">${place}</div>
-      <div style="margin-top: -2px"><i data-lucide="${trophyIcon}" class="ico-lg trophy"></i></div>
-      <div class="pod-avatar">${initials(r.username)}</div>
-      <div class="pod-name"><a href="https://www.openstreetmap.org/user/${encodeURIComponent(r.username)}" target="_blank" rel="noopener">${escapeHtml(r.username)}</a></div>
-      <div class="pod-score">${fmt.format(r.map_changes)}</div>
-      <div class="pod-score-label">map changes</div>
+      <span class="pod-rank">${place}</span>
+      <span class="pod-avatar" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
+      <span class="pod-name" title="${escapeHtml(r.username)}">${escapeHtml(r.username)}</span>
+      <span class="pod-score-wrap">
+        <span class="pod-score">${fmt.format(r.map_changes)}</span>
+        <div class="pod-score-label">changes</div>
+      </span>
     `;
+    div.addEventListener("click", () => openUserModal(r.username));
+    div.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openUserModal(r.username); }
+    });
     el.appendChild(div);
-  });
+  }
   refreshIcons(el);
 }
-function rowDetail(r) {
-  const cells = [
-    ["Nodes created", r.nodes_created, "circle-dot"],
-    ["Nodes modified", r.nodes_modified, "circle-dot"],
-    ["Nodes deleted", r.nodes_deleted, "circle-dot"],
-    ["Ways created", r.ways_created, "spline"],
-    ["Ways modified", r.ways_modified, "spline"],
-    ["Ways deleted", r.ways_deleted, "spline"],
-    ["Relations created", r.rels_created, "share-2"],
-    ["Relations modified", r.rels_modified, "share-2"],
-    ["Relations deleted", r.rels_deleted, "share-2"],
+function userTotals(r) {
+  return {
+    created: r.created,
+    modified: r.modified,
+    deleted: r.deleted,
+    changesets: r.changesets || 0,
+    buildings: r.buildings_created || 0,
+    highways: r.highways_created || 0,
+    pois: r.pois_created || 0,
+  };
+}
+function userBreakdownAgg(r) {
+  return aggregateTagStats([r]);
+}
+function openUserModal(username) {
+  const r = state.rows.find(x => x.username === username);
+  if (!r) return;
+  const modal = $("#user-modal");
+  $("#user-modal-name").innerHTML = `<a href="https://www.openstreetmap.org/user/${encodeURIComponent(r.username)}" target="_blank" rel="noopener">${escapeHtml(r.username)}</a>`;
+  $("#user-modal-sub").textContent = `rank #${state.rows.findIndex(x => x.username === username) + 1} · ${fmt.format(r.map_changes)} map changes · ${fmt.format(r.changesets || 0)} changesets`;
+  const avatar = $("#user-modal-avatar");
+  avatar.style.background = avatarColor(r.username);
+  avatar.textContent = initials(r.username);
+  const body = $("#user-modal-body");
+  const totals = userTotals(r);
+  const elementCells = [
+    ["Nodes created",     r.nodes_created,  "circle-dot"],
+    ["Nodes modified",    r.nodes_modified, "circle-dot"],
+    ["Nodes deleted",     r.nodes_deleted,  "circle-dot"],
+    ["Ways created",      r.ways_created,   "spline"],
+    ["Ways modified",     r.ways_modified,  "spline"],
+    ["Ways deleted",      r.ways_deleted,   "spline"],
+    ["Relations created", r.rels_created,   "share-2"],
+    ["Relations modified",r.rels_modified,  "share-2"],
+    ["Relations deleted", r.rels_deleted,   "share-2"],
   ];
-  const editorBadges = r.editors && r.editors.length
-    ? `<div class="detail-editors"><i data-lucide="pen-tool" class="ico-sm"></i>Editors: ${r.editors.map(e=>`<span class="badge">${escapeHtml(e)}</span>`).join("")}</div>`
-    : "";
-  return `<div class="detail-grid">${cells.map(([l,v,ic])=>`<div class="detail-stat"><div class="lbl"><i data-lucide="${ic}"></i>${l}</div><div class="val">${fmt.format(v||0)}</div></div>`).join("")}</div>${editorBadges}`;
+  let html = `<div class="overview-strip">`;
+  html += [
+    ["Created",   totals.created,    "plus-square",           true],
+    ["Modified",  totals.modified,   "edit-3",                false],
+    ["Deleted",   totals.deleted,    "trash-2",               false],
+    ["Changesets",totals.changesets, "git-commit-horizontal", false],
+    ["Buildings", totals.buildings,  "building-2",            false],
+    ["Highways",  totals.highways,   "route",                 false],
+    ["POIs",      totals.pois,       "map-pin",               false],
+  ].map(([l, v, ic, primary]) => `
+    <div class="ov-cell${primary ? " primary" : ""}">
+      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+      <div class="val">${fmt.format(v || 0)}</div>
+    </div>
+  `).join("");
+  html += `</div>`;
+  html += `<div class="overview-strip" style="margin-top:6px">`;
+  html += elementCells.map(([l, v, ic]) => `
+    <div class="ov-cell">
+      <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
+      <div class="val">${fmt.format(v || 0)}</div>
+    </div>
+  `).join("");
+  html += `</div>`;
+  const agg = userBreakdownAgg(r);
+  const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(agg, { maxKeys: 24, maxValuesPerKey: 8 });
+  if (keyCount > 0) {
+    html += `<div class="ov-toggle" style="border-bottom:none">`;
+    html += `<span class="ov-breakdown-meta">${fmt.format(keyCount)} tag key${keyCount === 1 ? "" : "s"} · ${fmt.format(valueCount)} value${valueCount === 1 ? "" : "s"}</span>`;
+    html += `<span class="tag-breakdown-label" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600;display:flex;align-items:center;gap:5px"><i data-lucide="tags"></i>Detailed tag contributions</span>`;
+    html += `</div>`;
+    html += `<div class="ov-breakdown" style="margin-top:8px">${tagHtml}</div>`;
+  } else {
+    html += `<div class="tag-stats-empty" style="margin-top:14px">No detailed tag stats reported for this contributor in this window.</div>`;
+  }
+  body.innerHTML = html;
+  modal.hidden = false;
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  refreshIcons(modal);
+  $("#user-modal-close").focus();
+}
+function closeUserModal() {
+  const modal = $("#user-modal");
+  modal.hidden = true;
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
 }
 function renderTable() {
   const tb = $("#lb-body");
@@ -1874,9 +2089,8 @@ function renderTable() {
     const rankClass = rank<=3 ? `r${rank}` : "";
     const totalCh = Math.max(1, r.map_changes);
     const cPct = (r.created/totalCh)*100, mPct = (r.modified/totalCh)*100, dPct = (r.deleted/totalCh)*100;
-    const expanded = state.expanded.has(r.username);
     return `
-      <tr data-user="${escapeHtml(r.username)}" class="lb-row" tabindex="0" role="button" aria-expanded="${expanded}">
+      <tr data-user="${escapeHtml(r.username)}" class="lb-row" tabindex="0" role="button" aria-label="View ${escapeHtml(r.username)} contributions">
         <td class="col-rank ${rankClass}">${rank<=3 ? `<span class="top">${rank}</span>` : rank}</td>
         <td class="col-user">
           <div class="user-cell">
@@ -1897,23 +2111,17 @@ function renderTable() {
           </div>
         </td>
       </tr>
-      ${expanded ? `<tr class="detail"><td colspan="8">${rowDetail(r)}</td></tr>` : ""}
     `;
   }).join("");
   tb.innerHTML = html;
   refreshIcons(tb);
   tb.querySelectorAll(".lb-row").forEach(tr => {
-    tr.addEventListener("click", () => toggleExpand(tr.dataset.user));
+    tr.addEventListener("click", () => openUserModal(tr.dataset.user));
     tr.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpand(tr.dataset.user); }
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openUserModal(tr.dataset.user); }
     });
   });
   renderPagination(total, startIdx + 1, endIdx);
-}
-function toggleExpand(user) {
-  if (state.expanded.has(user)) state.expanded.delete(user);
-  else state.expanded.add(user);
-  renderTable();
 }
 function renderPagination(total, from, to) {
   const wrap = $("#pagination");
@@ -2037,9 +2245,14 @@ function showError(err) {
     <p style="margin-top:14px; color: var(--muted)">If this is a CORS error and you're hosting this page off the API origin, the API needs to allow your origin. The status pill above will keep retrying when you click it.</p>
     <p style="margin-top:18px"><a href="${API_BASE}/docs/swagger" target="_blank" rel="noopener">Open the API docs <i data-lucide="external-link" class="ico-sm" style="vertical-align:-2px"></i></a></p>
   </div></td></tr>`;
-  ["kpi-mappers","kpi-pois","kpi-buildings","kpi-highways"].forEach(id => $("#"+id).textContent = "·");
+  $("#ov-strip").innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">·</div>`;
+  $("#ov-breakdown").innerHTML = "";
+  $("#ov-breakdown").hidden = true;
+  $("#ov-breakdown-meta").textContent = "";
+  $("#ov-toggle-btn").setAttribute("aria-expanded", "false");
+  $("#ov-toggle-btn").disabled = true;
+  $("#ov-toggle-label").textContent = "Show tag breakdown";
   $("#podium").innerHTML = "";
-  $("#tag-stats").innerHTML = `<div class="tag-stats-empty">·</div>`;
   $("#pagination").hidden = true;
   refreshIcons(tb);
 }
@@ -2206,12 +2419,36 @@ document.addEventListener("visibilitychange", () => {
     startAutoRefresh();
   }
 });
+function setupOverviewToggle() {
+  const btn = $("#ov-toggle-btn");
+  const breakdown = $("#ov-breakdown");
+  const label = $("#ov-toggle-label");
+  btn.addEventListener("click", () => {
+    if (btn.disabled) return;
+    const expanded = btn.getAttribute("aria-expanded") === "true";
+    btn.setAttribute("aria-expanded", expanded ? "false" : "true");
+    breakdown.hidden = expanded;
+    label.textContent = expanded ? "Show tag breakdown" : "Hide tag breakdown";
+  });
+}
+function setupUserModal() {
+  const modal = $("#user-modal");
+  $("#user-modal-close").addEventListener("click", closeUserModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeUserModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.classList.contains("open")) closeUserModal();
+  });
+}
 function boot() {
   readURL();
   renderChips();
   renderWindowBar();
   setupManifest();
   setupServiceWorker();
+  setupOverviewToggle();
+  setupUserModal();
   refreshIcons();
   fetchData({});
   startAutoRefresh();
