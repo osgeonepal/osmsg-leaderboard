@@ -1,4 +1,4 @@
-// OSMSG Leaderboard : app logic
+// OSMSG Leaderboard 
 const API_BASE = "https://osmsg.osgeonepal.org";
 const EDITOR_STATS_ENDPOINT = "/api/v1/editor-stats";
 const EDITOR_STATS_BASE = "https://osmsg-1.onrender.com";
@@ -45,6 +45,7 @@ const state = {
   osmAvatars: new Map(),
   editorStats: null,
 };
+state.userEditors = new Map();
 
 function fetchOsmAvatar(uid) {
   if (uid == null) return Promise.resolve(null);
@@ -479,12 +480,34 @@ function applyDerivedFilters() {
     Math.max(1, Math.ceil(rows.length / state.pageSize))
   );
 }
+
+async function fetchUserEditor(uid) {
+  const key = String(uid);
+  if (state.userEditors.has(key)) return state.userEditors.get(key);
+
+  try {
+    const { start, end } = rangeWindow(state.range);
+    const url = `https://api.openstreetmap.org/api/0.6/changesets.json?user=${encodeURIComponent(key)}&time=${isoUTC(start)},${isoUTC(end)}&limit=1`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error();
+    const json = await res.json();
+    const cs = json?.changesets?.[0];
+    const editor = cs?.tags?.created_by || null;
+    state.userEditors.set(key, editor);
+    return editor;
+  } catch {
+    state.userEditors.set(key, null);
+    return null;
+  }
+}
+
 function render() {
   applyDerivedFilters();
   renderOverview();
   renderPodium();
   renderTable();
   renderWindowBar();
+  renderHashtagPieChart();
 }
 
 function aggregateTagStats(rows) {
@@ -690,19 +713,16 @@ function renderPodium() {
 
     if (!r) {
       div.style.opacity = "0.4";
-      div.innerHTML = `
-        <span class="pod-rank">${place}</span>
-        <span class="pod-avatar">·</span>
-        <span class="pod-name">—</span>
-        <span class="pod-score-wrap"><span class="pod-score">0</span></span>`;
+      div.innerHTML = `<span class="pod-rank">${place}</span><span class="pod-avatar">·</span><span class="pod-name">—</span><span class="pod-score-wrap"><span class="pod-score">0</span></span>`;
       el.appendChild(div);
       continue;
     }
 
-    const created = (r.nodes_created || 0) + (r.ways_created || 0) + (r.rels_created || 0);
+    const created  = (r.nodes_created  || 0) + (r.ways_created  || 0) + (r.rels_created  || 0);
     const modified = (r.nodes_modified || 0) + (r.ways_modified || 0) + (r.rels_modified || 0);
-    const deleted = (r.nodes_deleted || 0) + (r.ways_deleted || 0) + (r.rels_deleted || 0);
+    const deleted  = (r.nodes_deleted  || 0) + (r.ways_deleted  || 0) + (r.rels_deleted  || 0);
 
+    // No editor badge here — editor info is shown only in the user modal
     div.innerHTML = `
       <span class="pod-rank">${place}</span>
       <span class="pod-avatar" data-osm-uid="${r.uid}" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
@@ -730,6 +750,36 @@ function renderPodium() {
     el.appendChild(div);
   }
   refreshIcons(el);
+}
+
+function shortEditor(s) {
+  if (!s) return "Unknown";
+  const iD = s.match(/iD\s*([\d.]+)/i);   if (iD)   return "iD " + iD[1];
+  const josm = s.match(/JOSM\/([\d.]+)/i); if (josm) return "JOSM " + josm[1];
+  const rapid = s.match(/Rapid\s*([\d.]+)/i); if (rapid) return "Rapid " + rapid[1];
+  if (/Vespucci/i.test(s))       return "Vespucci";
+  if (/StreetComplete/i.test(s)) return "StreetComplete";
+  if (/OsmAnd/i.test(s))        return "OsmAnd";
+  return s.length > 22 ? s.slice(0, 20) + "…" : s;
+}
+function editorFamily(s) {
+  if (!s) return null;
+  if (/iD/i.test(s))            return "iD";
+  if (/JOSM/i.test(s))          return "JOSM";
+  if (/Rapid/i.test(s))         return "Rapid";
+  if (/Vespucci/i.test(s))      return "Vespucci";
+  if (/StreetComplete/i.test(s)) return "StreetComplete";
+  return null;
+}
+function editorColor(family) {
+  const map = {
+    iD:             ["#E6F1FB", "#185FA5"],
+    JOSM:           ["#FAEEDA", "#854F0B"],
+    Rapid:          ["#EEEDFE", "#534AB7"],
+    Vespucci:       ["#EAF3DE", "#3B6D11"],
+    StreetComplete: ["#FAECE7", "#993C1D"],
+  };
+  return map[family] || ["#F1EFE8", "#5F5E5A"];
 }
 
 const USER_TOTAL_CELLS = [
@@ -801,7 +851,9 @@ function openUserModal(username) {
     <a href="https://www.openstreetmap.org/user/${encodeURIComponent(r.username)}"
        target="_blank" rel="noopener">${escapeHtml(r.username)}</a>`;
 
-  $("#user-modal-sub").textContent = `rank #${state.rows.findIndex((x) => x.username === username) + 1} · ${fmt.format(r.map_changes)} map changes · ${fmt.format(r.changesets)} changesets`;
+  // Sub-line: rank · changes · changesets (no editor badge here)
+  const subEl = $("#user-modal-sub");
+  subEl.textContent = `rank #${state.rows.findIndex((x) => x.username === username) + 1} · ${fmt.format(r.map_changes)} map changes · ${fmt.format(r.changesets)} changesets`;
 
   const av = $("#user-modal-avatar");
   av.style.background = avatarColor(r.username);
@@ -825,10 +877,38 @@ function openUserModal(username) {
   </div>`;
   }
 
+  // Editor cell — same ov-cell style, placed between the two strips, patched async
+  const editorCellId = `editor-cell-${r.uid}`;
+  const editorCellHtml = `
+  <div class="overview-strip" style="margin-top:6px">
+    <div class="ov-cell" id="${editorCellId}">
+      <div class="lbl"><i data-lucide="pen-tool"></i>Editor</div>
+      <div class="val" style="font-size:13px;color:var(--muted)">loading…</div>
+    </div>
+  </div>`;
+
   const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats([r]), { maxKeys: 24, maxVals: 8 });
   let html = hashtagHtml;
   html += `<div class="overview-strip">${cellsHtml(USER_TOTAL_CELLS, r)}</div>`;
+  html += editorCellHtml;
   html += `<div class="overview-strip" style="margin-top:6px">${elemCellsHtml(r)}</div>`;
+
+  // Fetch editor and patch the cell value in place
+  fetchUserEditor(r.uid).then((editor) => {
+    const cell = document.getElementById(editorCellId);
+    if (!cell) return;
+    const valEl = cell.querySelector(".val");
+    if (!valEl) return;
+    if (!editor) {
+      valEl.textContent = "Unknown";
+      valEl.style.color = "var(--muted)";
+      return;
+    }
+    const short = shortEditor(editor);
+    const family = editorFamily(editor);
+    const [ebg, efg] = editorColor(family);
+    valEl.innerHTML = `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;background:${ebg};color:${efg};border:0.5px solid ${efg}44" title="${escapeHtml(editor)}">${escapeHtml(short)}</span>`;
+  });
   if (keyCount) {
     html += `
       <div class="ov-toggle" style="border-bottom:none">
@@ -849,6 +929,7 @@ function openUserModal(username) {
   refreshIcons(modal);
   $("#user-modal-close").focus();
 }
+
 function closeUserModal() {
   const m = $("#user-modal");
   m.hidden = true;
@@ -1091,89 +1172,46 @@ async function fetchHealth() {
     console.warn("OSMSG health fetch failed:", err);
   }
 }
+
 function renderEditorStats() {
-    const el = $("#editor-stats");
-    if (!el || !state.editorStats) return;
-  
-    const { totalEditors, top5 } = state.editorStats;
-  
-    if (!top5 || !top5.length) {
-      el.innerHTML = `<div class="tag-stats-empty">No editor data available for this window.</div>`;
-      return;
-    }
-  
-    const EDITOR_STYLES = [
-      { bg: "var(--add-soft)",  border: "rgba(31,107,62,0.3)",  lbl: "var(--add-ink)", val: "var(--add-ink)" },
-      { bg: "var(--mod-soft)",  border: "rgba(199,126,61,0.3)", lbl: "var(--mod-ink)", val: "var(--mod-ink)" },
-      { bg: "var(--del-soft)",  border: "rgba(181,57,44,0.3)",  lbl: "var(--del-ink)", val: "var(--del-ink)" },
-      { bg: "var(--surface)",   border: "var(--bd)",            lbl: "var(--muted)",   val: "var(--ink)" },
-      { bg: "var(--surface)",   border: "var(--bd)",            lbl: "var(--muted)",   val: "var(--ink)" },
-    ];
-  
-    const EDITOR_ICONS = ["monitor", "smartphone", "map", "edit-2", "globe"];
-  
-    el.innerHTML = `
-      <div class="overview-strip" style="margin-bottom:10px;grid-template-columns:repeat(1,1fr)">
-      <div class="overview-strip" style="grid-template-columns:repeat(5,1fr)">
-        ${top5.map((r, i) => {
-          const s = EDITOR_STYLES[i] || EDITOR_STYLES[3];
-          const icon = EDITOR_ICONS[i] || "monitor";
-          return `
-            <div class="ov-cell" style="background:${s.bg};border-color:${s.border}">
-              <div class="lbl" style="color:${s.lbl}">
-                <i data-lucide="${icon}"></i>${escapeHtml(r.editor)}
-              </div>
-              <div class="val" style="color:${s.val};font-size:22px">
-                ${fmt.format(r.changes)}
-              </div>
-              <div style="font-size:11px;color:${s.lbl};margin-top:4px;opacity:0.8">
-                ${fmt.format(r.users)} user${r.users === 1 ? "" : "s"} · ${fmt.format(r.changesets)} cs
-              </div>
-            </div>`;
-        }).join("")}
-      </div>`;
-  
-    refreshIcons(el);
+  renderEditorBarChart();
+}
+
+async function fetchEditorStats() {
+  try {
+    const url = new URL(EDITOR_STATS_ENDPOINT, EDITOR_STATS_BASE);
+    const { start, end } = rangeWindow(state.range);
+    url.searchParams.set("start", isoUTC(start));
+    url.searchParams.set("end", isoUTC(end));
+    url.searchParams.set("limit", 100);
+
+    const res = await fetch(url, {
+      headers: { accept: "application/json" },
+      mode: "cors",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
+    const editors = json.editors || [];
+    const sorted = editors
+      .slice()
+      .sort((a, b) => (b.map_changes || 0) - (a.map_changes || 0));
+
+    state.editorStats = {
+      totalEditors: editors.length,
+      top5: sorted.slice(0, 5).map((e) => ({
+        editor: e.editor || "Unknown",
+        changes: e.map_changes || 0,
+        users: e.users || 0,
+        changesets: e.changesets || 0,
+      })),
+    };
+
+    renderEditorStats();
+  } catch (err) {
+    console.warn("Editor stats fetch failed:", err);
   }
-  async function fetchEditorStats() {
-    try {
-      const url = new URL(EDITOR_STATS_ENDPOINT, EDITOR_STATS_BASE);
-      const { start, end } = rangeWindow(state.range);
-      url.searchParams.set("start", isoUTC(start));
-      url.searchParams.set("end", isoUTC(end));
-      url.searchParams.set("limit", 100);
-  
-      const res = await fetch(url, {
-        headers: { accept: "application/json" },
-        mode: "cors",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  
-      const json = await res.json();
-  
-      const editors = json.editors || [];
-  
-      // Already one row per editor — just sort and take top 5
-      const sorted = editors
-        .slice()
-        .sort((a, b) => (b.map_changes || 0) - (a.map_changes || 0));
-  
-      state.editorStats = {
-        totalEditors: editors.length,
-        top5: sorted.slice(0, 5).map((e) => ({
-          editor: e.editor || "Unknown",
-          changes: e.map_changes || 0,
-          users: e.users || 0,
-          changesets: e.changesets || 0,
-        })),
-      };
-  
-      renderEditorStats();
-    } catch (err) {
-      console.warn("Editor stats fetch failed:", err);
-    }
-  }
-  
+}
 
 function renderWindowBar() {
   const { start, end } =

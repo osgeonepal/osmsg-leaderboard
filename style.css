@@ -2488,3 +2488,32 @@ footer {
       grid-template-columns: 1fr !important;
     }
   }
+  .pod-editor-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-top: 7px;
+    margin-top: 2px;
+    border-top: 0.5px solid var(--border, #E0DDD4);
+  }
+  .pod-editor-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    flex-shrink: 0;
+  }
+  .pod-editor-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #F1EFE8;
+    color: #5F5E5A;
+    border: 0.5px solid #5F5E5A44;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background .2s, color .2s;
+  }
