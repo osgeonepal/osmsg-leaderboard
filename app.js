@@ -851,7 +851,7 @@ function openUserModal(username) {
     <a href="https://www.openstreetmap.org/user/${encodeURIComponent(r.username)}"
        target="_blank" rel="noopener">${escapeHtml(r.username)}</a>`;
 
-  // Sub-line: rank · changes · changesets (no editor badge here)
+
   const subEl = $("#user-modal-sub");
   subEl.textContent = `rank #${state.rows.findIndex((x) => x.username === username) + 1} · ${fmt.format(r.map_changes)} map changes · ${fmt.format(r.changesets)} changesets`;
 
@@ -866,18 +866,15 @@ function openUserModal(username) {
   if (userHashtags.length) {
     hashtagHtml = `
   <div class="ov-cell ov-split" style="margin-bottom:10px;">
-    <div class="lbl"><i data-lucide="hash"></i>Hashtags</div>
-    <div class="val">
-      <span class="c">+${fmt.format(userHashtags.length)}</span>
-      <span class="m">~${fmt.format(userHashtags.length)}</span>
-    </div>
+    <div class="lbl"><i data-lucide="hash"></i> Hashtags   <div class="val">
+    +${fmt.format(userHashtags.length)}
+    </div> </div>
     <div class="hashtag-grid">
       ${userHashtags.map((h) => `<div class="hashtag-item"><span class="hash">#</span>${escapeHtml(h)}</div>`).join("")}
     </div>
   </div>`;
   }
 
-  // Editor cell — same ov-cell style, placed between the two strips, patched async
   const editorCellId = `editor-cell-${r.uid}`;
   const editorCellHtml = `
   <div class="overview-strip" style="margin-top:6px">
