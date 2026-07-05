@@ -138,7 +138,6 @@
     <div class="wb-item"><i data-lucide="cloud" class="ico-sm"></i><span class="k">API</span><span
         class="v">osmsg.osgeonepal.org</span></div>
   </div>
-
   <main role="main">
     <section aria-label="Overview">
       <div id="overview">
@@ -157,11 +156,17 @@
       </div>
     </section>
 
+
     <section aria-labelledby="podium-title">
       <h2 id="podium-title" class="sr-only">Top three contributors</h2>
       <div class="podium" id="podium" aria-live="polite"></div>
     </section>
-
+    <section aria-label="Editor Stats">
+      <div class="section-header">
+        <!-- <h2 class="section-title"><i data-lucide="monitor"></i> Editor Stats</h2> -->
+      </div>
+     
+    </section>
     <section aria-label="Leaderboard">
       <div class="table-wrap">
         <div class="table-controls">
@@ -224,6 +229,7 @@
         </div>
       </div>
     </section>
+
   </main>
 
   <div class="modal-backdrop" id="user-modal" role="dialog" aria-modal="true" aria-labelledby="user-modal-name" hidden>
@@ -261,7 +267,10 @@
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="app.js" defer></script>
+  <script src="charts.js" defer></script>
 </body>
+
 
 </html>
