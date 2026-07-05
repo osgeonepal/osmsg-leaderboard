@@ -1,5 +1,5 @@
 // OSMSG Leaderboard 
-const API_BASE = "https://osmsg.osgeonepal.org";
+const API_BASE = window.location.origin;
 const EDITOR_STATS_ENDPOINT = "/api/v1/editor-stats";
 const EDITOR_STATS_BASE = "https://osmsg-1.onrender.com";
 const ENDPOINT = "/api/v1/stats";
