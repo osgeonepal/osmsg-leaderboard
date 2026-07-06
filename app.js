@@ -70,7 +70,6 @@ function applyAvatar(el, uid, fallbackText) {
     el.innerHTML = `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=${JSON.stringify(fallbackText)}">`;
   });
 }
-
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const fmt = new Intl.NumberFormat("en-US");
