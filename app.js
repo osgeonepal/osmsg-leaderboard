@@ -722,7 +722,6 @@ function renderPodium() {
     const modified = (r.nodes_modified || 0) + (r.ways_modified || 0) + (r.rels_modified || 0);
     const deleted  = (r.nodes_deleted  || 0) + (r.ways_deleted  || 0) + (r.rels_deleted  || 0);
 
-    // No editor badge here — editor info is shown only in the user modal
     div.innerHTML = `
       <span class="pod-rank">${place}</span>
       <span class="pod-avatar" data-osm-uid="${r.uid}" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
@@ -866,9 +865,7 @@ function openUserModal(username) {
   if (userHashtags.length) {
     hashtagHtml = `
   <div class="ov-cell ov-split" style="margin-bottom:10px;">
-    <div class="lbl"><i data-lucide="hash"></i> Hashtags   <div class="val">
-    +${fmt.format(userHashtags.length)}
-    </div> </div>
+    
     <div class="hashtag-grid">
       ${userHashtags.map((h) => `<div class="hashtag-item"><span class="hash">#</span>${escapeHtml(h)}</div>`).join("")}
     </div>
