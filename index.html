@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -136,7 +135,7 @@
     <div class="wb-item" id="last-updated" aria-live="polite"><i data-lucide="refresh-cw" class="ico-sm"></i><span
         class="k">Updated</span><span class="v" id="last-updated-text">never</span></div>
     <div class="wb-item"><i data-lucide="cloud" class="ico-sm"></i><span class="k">API</span><span
-        class="v">osmsg.osgeonepal.org</span></div>
+        class="v" id="wb-api-host">osmsg-1.onrender.com</span></div>
   </div>
   <main role="main">
     <section aria-label="Overview">
@@ -256,7 +255,7 @@
       <div class="footer-links">
         <a href="https://github.com/osgeonepal/osmsg" target="_blank" rel="noopener"><i data-lucide="github"></i>
           GitHub</a>
-        <a href="https://osmsg.osgeonepal.org/docs/swagger" target="_blank" rel="noopener"><i data-lucide="cloud"></i>
+        <a id="api-docs-link" href="https://osmsg-1.onrender.com/docs/swagger" target="_blank" rel="noopener"><i data-lucide="cloud"></i>
           API docs</a>
         <a href="https://github.com/osgeonepal/osmsg/blob/master/docs/Manual.md" target="_blank" rel="noopener"><i
             data-lucide="book-open"></i> Manual</a>
@@ -268,8 +267,8 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="app.js" defer></script>
   <script src="charts.js" defer></script>
+  <script src="app.js" defer></script>
 </body>
 
 

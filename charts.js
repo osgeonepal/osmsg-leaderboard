@@ -1,4 +1,5 @@
-// OSMSG Leaderboard 
+"use strict";
+
 const CHART_BAR_COLORS = [
   "#2D6A4F",
   "#E76F51",
@@ -17,6 +18,15 @@ const CHART_HASHTAG_COLORS = [
 let _editorBarChart   = null;
 let _hashtagBarChart  = null;
 let _hashtagMetric    = "users";
+
+function hideCharts() {
+  const editorCard  = document.getElementById("editor-chart-card");
+  const hashtagCard = document.getElementById("hashtag-chart-card");
+  if (editorCard)  editorCard.hidden  = true;
+  if (hashtagCard) hashtagCard.hidden = true;
+  if (_editorBarChart)  { _editorBarChart.destroy();  _editorBarChart  = null; }
+  if (_hashtagBarChart) { _hashtagBarChart.destroy(); _hashtagBarChart = null; }
+}
 
 function _isDark() {
   return matchMedia("(prefers-color-scheme: dark)").matches;
@@ -154,7 +164,7 @@ function _ensureChartsSection() {
         <div id="editor-bar-legend" class="osmsg-bar-legend"></div>
         <div class="osmsg-chart-canvas-wrap" style="height:${CHART_HEIGHT}px;">
           <canvas id="editor-bar-canvas" role="img"
-            aria-label="Bar chart of map changes by editor software"></canvas>
+            aria-label="Bar chart of users by editor software"></canvas>
         </div>
       </div>
 
@@ -206,7 +216,6 @@ function renderEditorBarChart() {
   const top5 = stats.top5;
   const colors = top5.map((_, i) => CHART_BAR_COLORS[i % CHART_BAR_COLORS.length]);
 
-
   legendEl.innerHTML = top5
     .map((e, i) => `
       <span class="osmsg-bar-legend-item">
@@ -225,8 +234,8 @@ function renderEditorBarChart() {
     data: {
       labels: top5.map(e => shortEditor(e.editor)),
       datasets: [{
-        label: "Map changes",
-        data: top5.map(e => e.changes),
+        label: "Users",
+        data: top5.map(e => e.users),
         backgroundColor: colors,
         borderRadius: 5,
         borderSkipped: false,
@@ -246,11 +255,7 @@ function renderEditorBarChart() {
             title: items => items[0].label,
             label: ctx => {
               const e = top5[ctx.dataIndex];
-              return [
-                `  Changes: ${fmt.format(e.changes)}`,
-                `  Users: ${fmt.format(e.users)}`,
-                `  Changesets: ${fmt.format(e.changesets)}`,
-              ];
+              return `  Users: ${fmt.format(e.users)}`;
             }
           }
         }
@@ -292,9 +297,8 @@ function renderEditorBarChart() {
   });
 }
 
-
 const HASHTAG_METRIC_CONFIG = {
-  users:      { field: null,           label: "Users" },      
+  users:      { field: null,           label: "Users" },
   changes:    { field: "map_changes",  label: "Changes" },
   changesets: { field: "changesets",   label: "Changesets" },
 };
@@ -318,7 +322,6 @@ function renderHashtagPieChart() {
 
   const metricCfg = HASHTAG_METRIC_CONFIG[_hashtagMetric] || HASHTAG_METRIC_CONFIG.users;
 
-  
   const aggData = {};
   let rowsWithNoTags = 0;
   let rowsSeen = 0;
@@ -348,7 +351,7 @@ function renderHashtagPieChart() {
     }
 
     const value = metricCfg.field === null
-      ? 1                                   
+      ? 1
       : Number(r[metricCfg.field]) || 0;
 
     if (value === 0) continue;
