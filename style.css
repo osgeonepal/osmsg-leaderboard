@@ -2,7 +2,7 @@
  * Tailwind utility classes are still used inline in the HTML via the Play CDN.
  * This file contains the plain CSS for component-level classes.
  */
- :root {
+:root {
     --bg: #FAF8F2;
     --surface: #FFFFFF;
     --surface-alt: #F4F0E6;

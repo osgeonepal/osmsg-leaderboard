@@ -1,4 +1,4 @@
-"use strict";
+// OSMSG Leaderboard — charts.js
 
 const CHART_BAR_COLORS = [
   "#2D6A4F",
@@ -17,21 +17,11 @@ const CHART_HASHTAG_COLORS = [
 
 let _editorBarChart   = null;
 let _hashtagBarChart  = null;
-let _hashtagMetric    = "users";
-
-function hideCharts() {
-  const editorCard  = document.getElementById("editor-chart-card");
-  const hashtagCard = document.getElementById("hashtag-chart-card");
-  if (editorCard)  editorCard.hidden  = true;
-  if (hashtagCard) hashtagCard.hidden = true;
-  if (_editorBarChart)  { _editorBarChart.destroy();  _editorBarChart  = null; }
-  if (_hashtagBarChart) { _hashtagBarChart.destroy(); _hashtagBarChart = null; }
-}
+let _hashtagMetric    = "changes"; // "changes" | "users" | "changesets"
 
 function _isDark() {
   return matchMedia("(prefers-color-scheme: dark)").matches;
 }
-
 function _chartColors() {
   const dark = _isDark();
   return {
@@ -164,7 +154,7 @@ function _ensureChartsSection() {
         <div id="editor-bar-legend" class="osmsg-bar-legend"></div>
         <div class="osmsg-chart-canvas-wrap" style="height:${CHART_HEIGHT}px;">
           <canvas id="editor-bar-canvas" role="img"
-            aria-label="Bar chart of users by editor software"></canvas>
+            aria-label="Bar chart of map changes by editor software"></canvas>
         </div>
       </div>
 
@@ -180,6 +170,11 @@ function _ensureChartsSection() {
           </svg>
           Contributions by hashtag
         </div>
+        <div class="osmsg-metric-toggle" id="hashtag-metric-toggle">
+          <button class="osmsg-metric-btn active" data-metric="changes">Map changes</button>
+          <button class="osmsg-metric-btn" data-metric="users">Users</button>
+          <button class="osmsg-metric-btn" data-metric="changesets">Changesets</button>
+        </div>
         <div class="osmsg-hashtag-stat-row">
           <span id="hashtag-stat-total"></span>
           <span id="hashtag-stat-count"></span>
@@ -193,117 +188,111 @@ function _ensureChartsSection() {
     </div>`;
 
   main.appendChild(section);
+
+
+  document.getElementById("hashtag-metric-toggle").addEventListener("click", (e) => {
+    const btn = e.target.closest(".osmsg-metric-btn");
+    if (!btn) return;
+    document.querySelectorAll(".osmsg-metric-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    _hashtagMetric = btn.dataset.metric;
+    renderHashtagPieChart(); // re-render with new metric
+  });
 }
+
+
 
 function renderEditorBarChart() {
   _ensureChartsSection();
 
-  const card     = document.getElementById("editor-chart-card");
-  const canvasEl = document.getElementById("editor-bar-canvas");
+  const card    = document.getElementById("editor-chart-card");
   const legendEl = document.getElementById("editor-bar-legend");
+  const canvasEl = document.getElementById("editor-bar-canvas");
+  if (!card || !legendEl || !canvasEl) return;
 
-  if (!card || !canvasEl || !legendEl) return;
-
-  const stats = state.editorStats;
-  if (!stats || !stats.top5 || stats.top5.length === 0) {
+  const editorStats = state.editorStats;
+  if (!editorStats || !editorStats.top5 || !editorStats.top5.length) {
     card.hidden = true;
     return;
   }
 
+  const top5 = editorStats.top5;
   card.hidden = false;
 
-  const { grid, tick } = _chartColors();
-  const top5 = stats.top5;
-  const colors = top5.map((_, i) => CHART_BAR_COLORS[i % CHART_BAR_COLORS.length]);
-
-  legendEl.innerHTML = top5
-    .map((e, i) => `
-      <span class="osmsg-bar-legend-item">
-        <span class="osmsg-bar-legend-dot" style="background:${colors[i]}"></span>
-        ${escapeHtml(shortEditor(e.editor))}
-      </span>`)
-    .join("");
+  legendEl.innerHTML = top5.map((r, i) => {
+    const color = CHART_BAR_COLORS[i] || CHART_BAR_COLORS[4];
+    return `<span class="osmsg-bar-legend-item">
+      <span class="osmsg-bar-legend-dot" style="background:${color}"></span>
+      ${escapeHtml(r.editor)}
+      <span style="color:var(--ink-2);font-weight:500;">${fmt.format(r.users)}u</span>
+    </span>`;
+  }).join("");
 
   if (_editorBarChart) {
     _editorBarChart.destroy();
     _editorBarChart = null;
   }
 
+  const { grid, tick } = _chartColors();
+
   _editorBarChart = new Chart(canvasEl, {
     type: "bar",
     data: {
-      labels: top5.map(e => shortEditor(e.editor)),
+      labels: top5.map(r => r.editor),
       datasets: [{
-        label: "Users",
-        data: top5.map(e => e.users),
-        backgroundColor: colors,
-        borderRadius: 5,
+        label: "Map changes",
+        data: top5.map(r => r.changes),
+        backgroundColor: top5.map((_, i) => CHART_BAR_COLORS[i] || CHART_BAR_COLORS[4]),
+        borderRadius: 7,
         borderSkipped: false,
-        barPercentage: 0.6,
+        barPercentage: 0.65,
       }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           padding: 10,
           callbacks: {
             title: items => items[0].label,
             label: ctx => {
-              const e = top5[ctx.dataIndex];
-              return `  Users: ${fmt.format(e.users)}`;
-            }
-          }
-        }
+              const r = top5[ctx.dataIndex];
+              return [
+                `  Changes    : ${fmt.format(r.changes)}`,
+                `  Users      : ${fmt.format(r.users)}`,
+                `  Changesets : ${fmt.format(r.changesets)}`,
+              ];
+            },
+          },
+        },
       },
       scales: {
         x: {
-          grid: {
-            display: false
-          },
-          ticks: {
-            color: tick,
-            font: {
-              size: 11
-            }
-          }
+          grid: { display: false },
+          ticks: { color: tick, maxRotation: 20, font: { size: 11 } },
         },
         y: {
-          grid: {
-            color: grid
-          },
-          border: {
-            dash: [3, 3]
-          },
+          grid: { color: grid },
+          border: { dash: [3, 3] },
           ticks: {
             color: tick,
-            font: {
-              size: 11
-            },
+            font: { size: 11 },
             callback: v =>
-              v >= 1000000
-                ? (v / 1000000).toFixed(1) + "M"
-                : v >= 1000
-                ? (v / 1000).toFixed(0) + "k"
-                : v
-          }
-        }
-      }
-    }
+              v >= 1_000_000 ? (v / 1_000_000).toFixed(1) + "M"
+              : v >= 1_000   ? (v / 1_000).toFixed(v % 1_000 === 0 ? 0 : 1) + "k"
+              : v,
+          },
+        },
+      },
+    },
   });
 }
 
-const HASHTAG_METRIC_CONFIG = {
-  users:      { field: null,           label: "Users" },
-  changes:    { field: "map_changes",  label: "Changes" },
-  changesets: { field: "changesets",   label: "Changesets" },
-};
 
-function renderHashtagPieChart() {
+
+function renderHashtagPieChart() {   
   _ensureChartsSection();
 
   const card     = document.getElementById("hashtag-chart-card");
@@ -311,83 +300,60 @@ function renderHashtagPieChart() {
   const wrapEl   = document.getElementById("hashtag-canvas-wrap");
   const totalEl  = document.getElementById("hashtag-stat-total");
   const countEl  = document.getElementById("hashtag-stat-count");
-
   if (!card || !canvasEl || !wrapEl) return;
 
-  function normalizeHashtags(raw) {
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === "string") return raw.split(/[,\s]+/);
-    return [];
-  }
 
-  const metricCfg = HASHTAG_METRIC_CONFIG[_hashtagMetric] || HASHTAG_METRIC_CONFIG.users;
+  const aggChanges    = {};
+  const aggUsers      = {};
+  const aggChangesets = {};
 
-  const aggData = {};
-  let rowsWithNoTags = 0;
-  let rowsSeen = 0;
+  for (const r of state.rows) {
+    const tags = (r.hashtags || [])
+      .filter(Boolean)
+      .map(h => "#" + String(h).replace(/^#/, "").toLowerCase());
 
-  for (const r of (state.rows || [])) {
-    rowsSeen++;
+    const keys = tags.length ? tags : ["(no hashtag)"];
+    const share = 1 / keys.length; 
 
-    const tags = [...new Set(
-      normalizeHashtags(r.hashtags)
-        .map(h => String(h || "").trim())
-        .filter(h =>
-          h.length > 0 &&
-          h !== "-" &&
-          h !== "--" &&
-          h.toLowerCase() !== "null" &&
-          h.toLowerCase() !== "undefined" &&
-          h.toLowerCase() !== "none" &&
-          h.toLowerCase() !== "n/a"
-        )
-        .map(h => "#" + h.replace(/^#/, "").toLowerCase())
-        .filter(h => h.length > 1)
-    )];
-
-    if (tags.length === 0) {
-      rowsWithNoTags++;
-      continue;
-    }
-
-    const value = metricCfg.field === null
-      ? 1
-      : Number(r[metricCfg.field]) || 0;
-
-    if (value === 0) continue;
-    const share = value / tags.length;
-
-    for (const tag of tags) {
-      aggData[tag] = (aggData[tag] || 0) + share;
+    for (const t of keys) {
+      aggChanges[t]    = (aggChanges[t]    || 0) + r.map_changes    * share;
+      aggChangesets[t] = (aggChangesets[t] || 0) + r.changesets     * share;
+      
+      aggUsers[t]      = (aggUsers[t]      || 0) + share;
     }
   }
 
-  const entries = Object.entries(aggData)
-    .map(([tag, value]) => ({ tag, value: Math.round(value) }))
+  for (const k of Object.keys(aggUsers)) aggUsers[k] = Math.round(aggUsers[k]);
+
+  const aggMap = {
+    changes   : aggChanges,
+    users     : aggUsers,
+    changesets: aggChangesets,
+  };
+  const dataMap = aggMap[_hashtagMetric] || aggChanges;
+
+  const entries = Object.entries(dataMap)
+    .map(([k, v]) => ({ tag: k, value: Math.round(v) }))
     .filter(e => e.value > 0)
     .sort((a, b) => b.value - a.value);
 
-  if (entries.length === 0) {
-    console.warn(
-      `[hashtag-chart] No entries to show. rowsSeen=${rowsSeen}, rowsWithNoTags=${rowsWithNoTags}, metric=${_hashtagMetric}`
-    );
+  if (entries.length < 2) {
     card.hidden = true;
     return;
   }
 
   card.hidden = false;
 
-  const MAX_BARS = 5;
-  const shown = entries.slice(0, MAX_BARS);
-  const total = entries.reduce((sum, e) => sum + e.value, 0);
-  const metricLabel = metricCfg.label;
+  const MAX_BARS  = 15;
+  const shown     = entries.slice(0, MAX_BARS);
+  const total     = entries.reduce((s, e) => s + e.value, 0);
+  const shownSum  = shown.reduce((s, e) => s + e.value, 0);
 
+  const metricLabel = { changes: "map changes", users: "users", changesets: "changesets" }[_hashtagMetric];
   totalEl.textContent = `Total: ${fmt.format(total)} ${metricLabel}`;
-
-  countEl.textContent =
-    entries.length > MAX_BARS
-      ? `Showing top ${MAX_BARS} of ${entries.length} hashtags`
-      : `${entries.length} hashtag${entries.length === 1 ? "" : "s"}`;
+  countEl.textContent = entries.length > MAX_BARS
+    ? `Showing top ${MAX_BARS} of ${entries.length} hashtags`
+    : `${entries.length} hashtag${entries.length === 1 ? "" : "s"}`;
 
   const barH = 34;
   const canvasH = shown.length * barH + 60;
@@ -398,13 +364,12 @@ function renderHashtagPieChart() {
     _hashtagBarChart = null;
   }
 
-  const { grid, tick } = _chartColors();
+  const { grid, tick, bg } = _chartColors();
+
 
   function tagColor(tag) {
     let h = 0;
-    for (let i = 0; i < tag.length; i++) {
-      h = (h * 31 + tag.charCodeAt(i)) >>> 0;
-    }
+    for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
     return CHART_HASHTAG_COLORS[h % CHART_HASHTAG_COLORS.length];
   }
 
@@ -424,7 +389,7 @@ function renderHashtagPieChart() {
       }],
     },
     options: {
-      indexAxis: "y",
+      indexAxis: "y",          
       responsive: true,
       maintainAspectRatio: false,
       layout: { padding: { right: 60 } },
@@ -439,11 +404,12 @@ function renderHashtagPieChart() {
               const pct = total ? ((e.value / total) * 100).toFixed(1) : "0";
               return [
                 `  ${metricLabel}: ${fmt.format(e.value)}`,
-                `  Share: ${pct}%`
+                `  Share: ${pct}%`,
               ];
-            }
-          }
-        }
+            },
+          },
+        },
+        afterDraw: null,
       },
       scales: {
         x: {
@@ -453,16 +419,20 @@ function renderHashtagPieChart() {
             color: tick,
             font: { size: 11 },
             callback: v =>
-              v >= 1000000 ? (v / 1000000).toFixed(1) + "M"
-              : v >= 1000 ? (v / 1000).toFixed(0) + "k"
-              : v
-          }
+              v >= 1_000_000 ? (v / 1_000_000).toFixed(1) + "M"
+              : v >= 1_000   ? (v / 1_000).toFixed(0) + "k"
+              : v,
+          },
         },
         y: {
           grid: { display: false },
-          ticks: { color: tick, font: { size: 12 }, autoSkip: false }
-        }
-      }
+          ticks: {
+            color: tick,
+            font: { size: 12 },
+            autoSkip: false,
+          },
+        },
+      },
     },
     plugins: [{
       id: "hashtagValueLabels",
@@ -479,9 +449,8 @@ function renderHashtagPieChart() {
           const yPos = y.getPixelForValue(i);
           ctx.fillText(`${fmt.format(val)}  ${pct}%`, xPos, yPos);
         });
-
         ctx.restore();
-      }
-    }]
+      },
+    }],
   });
 }

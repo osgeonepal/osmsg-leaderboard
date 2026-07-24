@@ -8,14 +8,15 @@ const { CacheableResponsePlugin } = workbox.cacheableResponse;
 workbox.core.skipWaiting();
 workbox.core.clientsClaim();
 
+// App shell (HTML + JS) — fast, fall back to cache.
 registerRoute(
     ({ request }) => request.mode === "navigate" || ["script", "style", "worker"].includes(request.destination),
     new StaleWhileRevalidate({ cacheName: "osmsg-shell" })
 );
 
-const API_HOSTS = ["osmsg-1.onrender.com", "osmsg.osgeonepal.org"];
+// OSMSG API — try network, then cached copy.
 registerRoute(
-    ({ url }) => API_HOSTS.includes(url.hostname) && url.pathname.startsWith("/api/"),
+    ({ url }) => url.hostname === "osmsg.osgeonepal.org" && url.pathname.startsWith("/api/"),
     new NetworkFirst({
         cacheName: "osmsg-api",
         networkTimeoutSeconds: 10,
@@ -23,6 +24,7 @@ registerRoute(
     })
 );
 
+// CDNs (fonts, lucide, tailwind, avatars) — long-lived cache.
 registerRoute(
     ({ url }) => ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net", "cdn.tailwindcss.com",
         "storage.googleapis.com", "github.com", "avatars.githubusercontent.com"].includes(url.hostname),

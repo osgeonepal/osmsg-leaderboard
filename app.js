@@ -1,30 +1,9 @@
-"use strict";
-
-const API_ENVIRONMENTS = {
-  render: "https://osmsg-1.onrender.com",
-  production: "https://osmsg.osgeonepal.org",
-};
-
-const ACTIVE_ENV = "render";
-
-const _param = new URLSearchParams(location.search).get("api");
-const API_BASE =
-  (_param && (API_ENVIRONMENTS[_param] || (_param.startsWith("http") && _param))) ||
-  API_ENVIRONMENTS[ACTIVE_ENV];
-
-const ENDPOINTS = {
-  health: "/health",
-  stats: "/api/v1/stats",
-  hashtagStats: "/api/v1/hashtag-stats",
-  editorStats: "/api/v1/editor-stats",
-  map: "/api/v1/map",
-};
-
-const API_DOCS_URL = `${API_BASE}/docs/swagger`;
-const API_HOST = new URL(API_BASE).hostname;
-
-const OSM_API_BASE = "https://api.openstreetmap.org";
-
+// OSMSG Leaderboard 
+const API_BASE = "https://osmsg.osgeonepal.org";
+const EDITOR_STATS_ENDPOINT = "/api/v1/editor-stats";
+const EDITOR_STATS_BASE = "https://osmsg-1.onrender.com";
+const ENDPOINT = "/api/v1/stats";
+const HEALTH_ENDPOINT = "/health";
 const ALL_TIME_START = "2004-08-09T00:00:00Z";
 const RANGE_HOURS = { "1h": 1, "24h": 24, "7d": 168, "30d": 720, "90d": 2160 };
 const RANGE_LABELS = {
@@ -37,121 +16,7 @@ const RANGE_LABELS = {
   custom: "custom range",
 };
 const REFRESH_INTERVAL_MS = 60_000;
-const FETCH_TIMEOUT_MS = 30_000;
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-
-const $ = (s, r = document) => r.querySelector(s);
-const $$ = (s, r = document) => [...r.querySelectorAll(s)];
-
-const fmt = new Intl.NumberFormat("en-US");
-
-const dtf = (opts) =>
-  new Intl.DateTimeFormat(undefined, { ...opts, hour12: false, timeZone: TZ });
-const dtfFull = dtf({
-  year: "numeric",
-  month: "short",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-});
-const dtfShort = dtf({
-  month: "short",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-const dtfDate = dtf({ year: "numeric", month: "short", day: "2-digit" });
-const dtfClock = dtf({ hour: "2-digit", minute: "2-digit", second: "2-digit" });
-
-const escapeHtml = (s) =>
-  String(s).replace(
-    /[&<>"']/g,
-    (c) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-
-const refreshIcons = (root) =>
-  window.lucide?.createIcons?.(
-    root
-      ? {
-          attrs: { "stroke-width": 2 },
-          nameAttr: "data-lucide",
-          icons: window.lucide.icons,
-        }
-      : { attrs: { "stroke-width": 2 } }
-  );
-
-const isoUTC = (d) => d.toISOString().replace(/\.\d+Z$/, "Z");
-const nowUTC = () => new Date();
-
-function tzOffsetLabel() {
-  const m = -new Date().getTimezoneOffset(),
-    s = m >= 0 ? "+" : "−",
-    a = Math.abs(m);
-  return `UTC${s}${String(Math.floor(a / 60)).padStart(2, "0")}:${String(a % 60).padStart(2, "0")}`;
-}
-
-function ago(d) {
-  if (!d) return "never";
-  const s = Math.max(0, Math.round((Date.now() - d) / 1000));
-  if (s < 5) return "just now";
-  if (s < 60) return `${s}s ago`;
-  const m = (s / 60) | 0;
-  if (m < 60) return `${m}m ago`;
-  const h = (m / 60) | 0;
-  if (h < 24) return `${h}h ago`;
-  return `${(h / 24) | 0}d ago`;
-}
-
-function avatarColor(name) {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return ["#2D5F3F", "#3A6E4A", "#1F4D2E", "#4A7C5C", "#1F5C3D"][h % 5];
-}
-
-function initials(name) {
-  if (!name) return "?";
-  const p = name
-    .replace(/[_\-]+/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
-  return (
-    p.length === 1 ? p[0].slice(0, 2) : p[0][0] + p.at(-1)[0]
-  ).toUpperCase();
-}
-
-function shortEditor(s) {
-  if (!s) return "Unknown";
-  const iD = s.match(/iD\s*([\d.]+)/i);   if (iD)   return "iD " + iD[1];
-  const josm = s.match(/JOSM\/([\d.]+)/i); if (josm) return "JOSM " + josm[1];
-  const rapid = s.match(/Rapid\s*([\d.]+)/i); if (rapid) return "Rapid " + rapid[1];
-  if (/Vespucci/i.test(s))       return "Vespucci";
-  if (/StreetComplete/i.test(s)) return "StreetComplete";
-  if (/OsmAnd/i.test(s))        return "OsmAnd";
-  return s.length > 22 ? s.slice(0, 20) + "…" : s;
-}
-
-function editorFamily(s) {
-  if (!s) return null;
-  if (/iD/i.test(s))            return "iD";
-  if (/JOSM/i.test(s))          return "JOSM";
-  if (/Rapid/i.test(s))         return "Rapid";
-  if (/Vespucci/i.test(s))      return "Vespucci";
-  if (/StreetComplete/i.test(s)) return "StreetComplete";
-  return null;
-}
-
-function editorColor(family) {
-  const map = {
-    iD:             ["#E6F1FB", "#185FA5"],
-    JOSM:           ["#FAEEDA", "#854F0B"],
-    Rapid:          ["#EEEDFE", "#534AB7"],
-    Vespucci:       ["#EAF3DE", "#3B6D11"],
-    StreetComplete: ["#FAECE7", "#993C1D"],
-  };
-  return map[family] || ["#F1EFE8", "#5F5E5A"];
-}
 
 const state = {
   hashtags: [],
@@ -177,9 +42,82 @@ const state = {
   inflight: null,
   page: 1,
   pageSize: 25,
+  osmAvatars: new Map(),
   editorStats: null,
 };
+state.userEditors = new Map();
 
+function fetchOsmAvatar(uid) {
+  if (uid == null) return Promise.resolve(null);
+  const key = String(uid);
+  if (state.osmAvatars.has(key)) return state.osmAvatars.get(key);
+  const p = fetch(
+    `https://api.openstreetmap.org/api/0.6/user/${encodeURIComponent(key)}.json`,
+    { headers: { Accept: "application/json" } }
+  )
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => j?.user?.img?.href || null)
+    .catch(() => null);
+  state.osmAvatars.set(key, p);
+  return p;
+}
+
+function applyAvatar(el, uid, fallbackText) {
+  if (!el) return;
+  fetchOsmAvatar(uid).then((url) => {
+    if (!url) return;
+    if (el.dataset.osmUid !== String(uid)) return;
+    el.innerHTML = `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=${JSON.stringify(fallbackText)}">`;
+  });
+}
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fmt = new Intl.NumberFormat("en-US");
+const dtf = (opts) =>
+  new Intl.DateTimeFormat(undefined, { ...opts, hour12: false, timeZone: TZ });
+const dtfFull = dtf({
+  year: "numeric",
+  month: "short",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+const dtfShort = dtf({
+  month: "short",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+const dtfDate = dtf({ year: "numeric", month: "short", day: "2-digit" });
+const dtfClock = dtf({ hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+const escapeHtml = (s) =>
+  String(s).replace(
+    /[&<>"']/g,
+    (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+const refreshIcons = (root) =>
+  window.lucide?.createIcons?.(
+    root
+      ? {
+          attrs: { "stroke-width": 2 },
+          nameAttr: "data-lucide",
+          icons: window.lucide.icons,
+        }
+      : { attrs: { "stroke-width": 2 } }
+  );
+const isoUTC = (d) => d.toISOString().replace(/\.\d+Z$/, "Z");
+const nowUTC = () => new Date();
+
+function tzOffsetLabel() {
+  const m = -new Date().getTimezoneOffset(),
+    s = m >= 0 ? "+" : "−",
+    a = Math.abs(m);
+  return `UTC${s}${String(Math.floor(a / 60)).padStart(2, "0")}:${String(a % 60).padStart(2, "0")}`;
+}
 function rangeWindow(k) {
   const end = nowUTC();
   if (k === "all") return { start: new Date(ALL_TIME_START), end };
@@ -190,96 +128,32 @@ function rangeWindow(k) {
     };
   return { start: new Date(end - (RANGE_HOURS[k] || 24) * 3600000), end };
 }
-
-function apiUrl(endpoint, params = {}) {
-  const url = new URL(endpoint, API_BASE);
-  for (const [k, v] of Object.entries(params)) {
-    if (v == null) continue;
-    if (Array.isArray(v)) v.forEach((x) => url.searchParams.append(k, String(x)));
-    else url.searchParams.set(k, String(v));
-  }
-  return url;
+function ago(d) {
+  if (!d) return "never";
+  const s = Math.max(0, Math.round((Date.now() - d) / 1000));
+  if (s < 5) return "just now";
+  if (s < 60) return `${s}s ago`;
+  const m = (s / 60) | 0;
+  if (m < 60) return `${m}m ago`;
+  const h = (m / 60) | 0;
+  if (h < 24) return `${h}h ago`;
+  return `${(h / 24) | 0}d ago`;
 }
-
-async function getJson(url, { signal } = {}) {
-  const res = await fetch(url, {
-    headers: { accept: "application/json" },
-    mode: "cors",
-    signal,
-  });
-  if (!res.ok)
-    throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
-  return res.json();
+function avatarColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return ["#2D5F3F", "#3A6E4A", "#1F4D2E", "#4A7C5C", "#1F5C3D"][h % 5];
 }
-
-const fetchHealth = () => getJson(apiUrl(ENDPOINTS.health));
-
-const fetchStats = ({ start, end, hashtags = [], tags, limit, signal } = {}) =>
-  getJson(
-    apiUrl(ENDPOINTS.stats, {
-      start: isoUTC(start),
-      end: isoUTC(end),
-      hashtag: hashtags,
-      tags,
-      limit,
-    }),
-    { signal }
-  );
-
-const fetchHashtagStats = ({ start, end, limit, signal } = {}) =>
-  getJson(
-    apiUrl(ENDPOINTS.hashtagStats, { start: isoUTC(start), end: isoUTC(end), limit }),
-    { signal }
-  );
-
-const fetchEditorStats = ({ start, end, limit = 100, signal } = {}) =>
-  getJson(
-    apiUrl(ENDPOINTS.editorStats, { start: isoUTC(start), end: isoUTC(end), limit }),
-    { signal }
-  );
-
-const fetchMapCentroids = ({ start, end, limit, signal } = {}) =>
-  getJson(
-    apiUrl(ENDPOINTS.map, { start: isoUTC(start), end: isoUTC(end), limit }),
-    { signal }
-  );
-
-const osmAvatarCache = new Map();
-function fetchOsmAvatar(uid) {
-  if (uid == null) return Promise.resolve(null);
-  const key = String(uid);
-  if (osmAvatarCache.has(key)) return osmAvatarCache.get(key);
-  const p = fetch(
-    `${OSM_API_BASE}/api/0.6/user/${encodeURIComponent(key)}.json`,
-    { headers: { Accept: "application/json" } }
-  )
-    .then((r) => (r.ok ? r.json() : null))
-    .then((j) => j?.user?.img?.href || null)
-    .catch(() => null);
-  osmAvatarCache.set(key, p);
-  return p;
+function initials(name) {
+  if (!name) return "?";
+  const p = name
+    .replace(/[_\-]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+  return (
+    p.length === 1 ? p[0].slice(0, 2) : p[0][0] + p.at(-1)[0]
+  ).toUpperCase();
 }
-
-const userEditorCache = new Map();
-async function fetchUserEditor(uid, start, end) {
-  const key = String(uid);
-  if (userEditorCache.has(key)) return userEditorCache.get(key);
-  try {
-    const url = `${OSM_API_BASE}/api/0.6/changesets.json?user=${encodeURIComponent(key)}&time=${isoUTC(start)},${isoUTC(end)}&limit=1`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new Error();
-    const json = await res.json();
-    const editor = json?.changesets?.[0]?.tags?.created_by || null;
-    userEditorCache.set(key, editor);
-    return editor;
-  } catch {
-    userEditorCache.set(key, null);
-    return null;
-  }
-}
-
-const api = { apiUrl, fetchHealth, fetchStats, fetchHashtagStats, fetchEditorStats, fetchMapCentroids, fetchOsmAvatar, fetchUserEditor };
-
 function sumTagKey(ts, k) {
   const n = ts[k];
   if (!n) return { c: 0, m: 0 };
@@ -334,35 +208,6 @@ function transform(row) {
     deleted: row.nodes_delete + row.ways_delete + row.rels_delete,
     tag_stats: ts,
   };
-}
-
-function aggregateTagStats(rows) {
-  const agg = {};
-  for (const r of rows) {
-    const ts = r.tag_stats;
-    for (const key in ts) {
-      const vals = ts[key];
-      const a = (agg[key] ||= { values: {}, totalC: 0, totalM: 0 });
-      for (const v in vals) {
-        const c = vals[v].c, m = vals[v].m;
-        const slot = (a.values[v] ||= { c: 0, m: 0 });
-        slot.c += c;
-        slot.m += m;
-        a.totalC += c;
-        a.totalM += m;
-      }
-    }
-  }
-  return agg;
-}
-
-function applyAvatar(el, uid, fallbackText) {
-  if (!el) return;
-  api.fetchOsmAvatar(uid).then((url) => {
-    if (!url) return;
-    if (el.dataset.osmUid !== String(uid)) return;
-    el.innerHTML = `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=${JSON.stringify(fallbackText)}">`;
-  });
 }
 
 const hashtagInput = $("#hashtag-input"),
@@ -559,23 +404,28 @@ async function fetchData({ silent = false } = {}) {
   const { start, end } = rangeWindow(state.range);
   state.windowStart = start;
   state.windowEnd = end;
+  const url = new URL(ENDPOINT, API_BASE);
+  url.searchParams.set("start", isoUTC(start));
+  url.searchParams.set("end", isoUTC(end));
+  state.hashtags.forEach((h) => url.searchParams.append("hashtag", h));
   const ctrl = new AbortController();
   state.inflight = ctrl;
-  const timeout = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(() => ctrl.abort(), 30_000);
   renderWindowBar();
   try {
-    const json = await api.fetchStats({
-      start,
-      end,
-      hashtags: state.hashtags,
+    const res = await fetch(url, {
+      headers: { accept: "application/json" },
+      mode: "cors",
       signal: ctrl.signal,
     });
+    if (!res.ok)
+      throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
+    const json = await res.json();
     state.rows = json.users.map(transform);
     state.lastFetched = new Date();
     state.lastError = null;
     render();
-    refreshHealth();
-    refreshEditorStats(start, end);
+    fetchHealth();
     updateLastUpdated();
     if (!silent && state.rows.length)
       toast({ msg: "Updated", icon: "check-circle-2" });
@@ -631,6 +481,26 @@ function applyDerivedFilters() {
   );
 }
 
+async function fetchUserEditor(uid) {
+  const key = String(uid);
+  if (state.userEditors.has(key)) return state.userEditors.get(key);
+
+  try {
+    const { start, end } = rangeWindow(state.range);
+    const url = `https://api.openstreetmap.org/api/0.6/changesets.json?user=${encodeURIComponent(key)}&time=${isoUTC(start)},${isoUTC(end)}&limit=1`;
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) throw new Error();
+    const json = await res.json();
+    const cs = json?.changesets?.[0];
+    const editor = cs?.tags?.created_by || null;
+    state.userEditors.set(key, editor);
+    return editor;
+  } catch {
+    state.userEditors.set(key, null);
+    return null;
+  }
+}
+
 function render() {
   applyDerivedFilters();
   renderOverview();
@@ -640,6 +510,25 @@ function render() {
   renderHashtagPieChart();
 }
 
+function aggregateTagStats(rows) {
+  const agg = {};
+  for (const r of rows) {
+    const ts = r.tag_stats;
+    for (const key in ts) {
+      const vals = ts[key];
+      const a = (agg[key] ||= { values: {}, totalC: 0, totalM: 0 });
+      for (const v in vals) {
+        const c = vals[v].c, m = vals[v].m;
+        const slot = (a.values[v] ||= { c: 0, m: 0 });
+        slot.c += c;
+        slot.m += m;
+        a.totalC += c;
+        a.totalM += m;
+      }
+    }
+  }
+  return agg;
+}
 function tagBreakdownHtml(agg, { maxKeys = 10 } = {}) {
   const keys = Object.entries(agg)
     .filter(([, v]) => v.totalC + v.totalM > 0)
@@ -833,6 +722,7 @@ function renderPodium() {
     const modified = (r.nodes_modified || 0) + (r.ways_modified || 0) + (r.rels_modified || 0);
     const deleted  = (r.nodes_deleted  || 0) + (r.ways_deleted  || 0) + (r.rels_deleted  || 0);
 
+    // No editor badge here — editor info is shown only in the user modal
     div.innerHTML = `
       <span class="pod-rank">${place}</span>
       <span class="pod-avatar" data-osm-uid="${r.uid}" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
@@ -860,6 +750,36 @@ function renderPodium() {
     el.appendChild(div);
   }
   refreshIcons(el);
+}
+
+function shortEditor(s) {
+  if (!s) return "Unknown";
+  const iD = s.match(/iD\s*([\d.]+)/i);   if (iD)   return "iD " + iD[1];
+  const josm = s.match(/JOSM\/([\d.]+)/i); if (josm) return "JOSM " + josm[1];
+  const rapid = s.match(/Rapid\s*([\d.]+)/i); if (rapid) return "Rapid " + rapid[1];
+  if (/Vespucci/i.test(s))       return "Vespucci";
+  if (/StreetComplete/i.test(s)) return "StreetComplete";
+  if (/OsmAnd/i.test(s))        return "OsmAnd";
+  return s.length > 22 ? s.slice(0, 20) + "…" : s;
+}
+function editorFamily(s) {
+  if (!s) return null;
+  if (/iD/i.test(s))            return "iD";
+  if (/JOSM/i.test(s))          return "JOSM";
+  if (/Rapid/i.test(s))         return "Rapid";
+  if (/Vespucci/i.test(s))      return "Vespucci";
+  if (/StreetComplete/i.test(s)) return "StreetComplete";
+  return null;
+}
+function editorColor(family) {
+  const map = {
+    iD:             ["#E6F1FB", "#185FA5"],
+    JOSM:           ["#FAEEDA", "#854F0B"],
+    Rapid:          ["#EEEDFE", "#534AB7"],
+    Vespucci:       ["#EAF3DE", "#3B6D11"],
+    StreetComplete: ["#FAECE7", "#993C1D"],
+  };
+  return map[family] || ["#F1EFE8", "#5F5E5A"];
 }
 
 const USER_TOTAL_CELLS = [
@@ -931,6 +851,7 @@ function openUserModal(username) {
     <a href="https://www.openstreetmap.org/user/${encodeURIComponent(r.username)}"
        target="_blank" rel="noopener">${escapeHtml(r.username)}</a>`;
 
+
   const subEl = $("#user-modal-sub");
   subEl.textContent = `rank #${state.rows.findIndex((x) => x.username === username) + 1} · ${fmt.format(r.map_changes)} map changes · ${fmt.format(r.changesets)} changesets`;
 
@@ -945,6 +866,9 @@ function openUserModal(username) {
   if (userHashtags.length) {
     hashtagHtml = `
   <div class="ov-cell ov-split" style="margin-bottom:10px;">
+    <div class="lbl"><i data-lucide="hash"></i> Hashtags   <div class="val">
+    +${fmt.format(userHashtags.length)}
+    </div> </div>
     <div class="hashtag-grid">
       ${userHashtags.map((h) => `<div class="hashtag-item"><span class="hash">#</span>${escapeHtml(h)}</div>`).join("")}
     </div>
@@ -960,14 +884,14 @@ function openUserModal(username) {
     </div>
   </div>`;
 
-  const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats([r]), { maxKeys: 24 });
+  const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats([r]), { maxKeys: 24, maxVals: 8 });
   let html = hashtagHtml;
   html += `<div class="overview-strip">${cellsHtml(USER_TOTAL_CELLS, r)}</div>`;
   html += editorCellHtml;
   html += `<div class="overview-strip" style="margin-top:6px">${elemCellsHtml(r)}</div>`;
 
-  const { start, end } = rangeWindow(state.range);
-  api.fetchUserEditor(r.uid, start, end).then((editor) => {
+  // Fetch editor and patch the cell value in place
+  fetchUserEditor(r.uid).then((editor) => {
     const cell = document.getElementById(editorCellId);
     if (!cell) return;
     const valEl = cell.querySelector(".val");
@@ -1187,7 +1111,7 @@ function showError(err) {
     <h3>${isAbort ? "Request timed out" : "Couldn't reach the OSMSG API"}</h3>
     <p style="margin-top:8px"><code style="font-family:var(--mono);font-size:12px;background:#F4F0E6;padding:2px 6px;border-radius:4px;color:#3A4744">${escapeHtml(msg)}</code></p>
     <p style="margin-top:14px;color:#717D78">If this is a CORS error and you're hosting this page off the API origin, the API needs to allow your origin. The status pill above will keep retrying when you click it.</p>
-    <p style="margin-top:18px"><a href="${API_DOCS_URL}" target="_blank" rel="noopener">Open the API docs <i data-lucide="external-link" class="ico-sm" style="vertical-align:-2px"></i></a></p>
+    <p style="margin-top:18px"><a href="${API_BASE}/docs/swagger" target="_blank" rel="noopener">Open the API docs <i data-lucide="external-link" class="ico-sm" style="vertical-align:-2px"></i></a></p>
   </div></td></tr>`;
   $("#ov-strip").innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">·</div>`;
   $("#ov-breakdown").innerHTML = "";
@@ -1198,8 +1122,6 @@ function showError(err) {
   $("#ov-toggle-label").textContent = "Show tag breakdown";
   $("#podium").innerHTML = "";
   $("#pagination").hidden = true;
-  state.editorStats = null;
-  hideCharts();
   refreshIcons(tb);
 }
 
@@ -1209,7 +1131,7 @@ function updateLastUpdated() {
   const h = state.health;
   if (h?.last_ts) {
     const t = dtfClock.format(h.last_ts);
-    txt.innerHTML = `Server ${ago(h.last_ts)} · <time datetime="${h.last_ts.toISOString()}">${t}</time>`;
+    txt.innerHTML = `Server ${ago(h.last_ts)} \u00b7 <time datetime="${h.last_ts.toISOString()}">${t}</time>`;
     const lines = [
       `OSM diff timestamp (last_ts): ${h.last_ts.toISOString()}`,
       h.updated_at ? `Server processed at: ${h.updated_at.toISOString()}` : null,
@@ -1219,7 +1141,7 @@ function updateLastUpdated() {
     if (chip) chip.title = lines.join("\n");
   } else if (state.lastFetched) {
     const t = dtfClock.format(state.lastFetched);
-    txt.innerHTML = `Updated ${ago(state.lastFetched)} · <time datetime="${state.lastFetched.toISOString()}">${t}</time>`;
+    txt.innerHTML = `Updated ${ago(state.lastFetched)} \u00b7 <time datetime="${state.lastFetched.toISOString()}">${t}</time>`;
     if (chip) chip.title = "";
   } else {
     txt.textContent = "never";
@@ -1227,9 +1149,15 @@ function updateLastUpdated() {
   }
 }
 
-async function refreshHealth() {
+async function fetchHealth() {
   try {
-    const j = await api.fetchHealth();
+    fetchEditorStats();
+    const res = await fetch(new URL(HEALTH_ENDPOINT, API_BASE), {
+      headers: { accept: "application/json" },
+      mode: "cors",
+    });
+    if (!res.ok) return;
+    const j = await res.json();
     state.health = {
       status: j.status ?? null,
       last_seq: j.last_seq ?? null,
@@ -1242,17 +1170,29 @@ async function refreshHealth() {
   }
 }
 
-let _editorStatsToken = 0;
-async function refreshEditorStats(start, end) {
-  const token = ++_editorStatsToken;
+function renderEditorStats() {
+  renderEditorBarChart();
+}
+
+async function fetchEditorStats() {
   try {
-    if (!start || !end) ({ start, end } = rangeWindow(state.range));
-    const json = await api.fetchEditorStats({ start, end, limit: 100 });
-    if (token !== _editorStatsToken) return;
+    const url = new URL(EDITOR_STATS_ENDPOINT, EDITOR_STATS_BASE);
+    const { start, end } = rangeWindow(state.range);
+    url.searchParams.set("start", isoUTC(start));
+    url.searchParams.set("end", isoUTC(end));
+    url.searchParams.set("limit", 100);
+
+    const res = await fetch(url, {
+      headers: { accept: "application/json" },
+      mode: "cors",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const json = await res.json();
     const editors = json.editors || [];
     const sorted = editors
       .slice()
-      .sort((a, b) => (b.users || 0) - (a.users || 0));
+      .sort((a, b) => (b.map_changes || 0) - (a.map_changes || 0));
 
     state.editorStats = {
       totalEditors: editors.length,
@@ -1264,12 +1204,8 @@ async function refreshEditorStats(start, end) {
       })),
     };
 
-    renderEditorBarChart();
+    renderEditorStats();
   } catch (err) {
-    if (token !== _editorStatsToken) return;
-
-    state.editorStats = null;
-    renderEditorBarChart();
     console.warn("Editor stats fetch failed:", err);
   }
 }
@@ -1361,17 +1297,11 @@ document.addEventListener("keydown", (e) => {
 });
 
 function boot() {
-
-  const apiHostEl = $("#wb-api-host");
-  if (apiHostEl) apiHostEl.textContent = API_HOST;
-  const apiDocsLink = $("#api-docs-link");
-  if (apiDocsLink) apiDocsLink.href = API_DOCS_URL;
-
   readURL();
   renderChips();
   renderWindowBar();
   refreshIcons();
-  refreshHealth();
+  fetchHealth();
   fetchData({});
   startAutoRefresh();
   state.agoTimer = setInterval(updateLastUpdated, 5000);
