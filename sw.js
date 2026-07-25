@@ -1,25 +1,25 @@
 // Service worker powered by Workbox (Google). https://developer.chrome.com/docs/workbox/
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/7.1.0/workbox-sw.js");
 const { registerRoute } = workbox.routing;
-const { CacheFirst, StaleWhileRevalidate, NetworkFirst } = workbox.strategies;
+const { CacheFirst, NetworkFirst } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 const { CacheableResponsePlugin } = workbox.cacheableResponse;
 
 workbox.core.skipWaiting();
 workbox.core.clientsClaim();
 
-// App shell (HTML + JS) — fast, fall back to cache.
+// App shell (HTML + JS) — always take the current version when online, fall back to cache offline.
 registerRoute(
     ({ request }) => request.mode === "navigate" || ["script", "style", "worker"].includes(request.destination),
-    new StaleWhileRevalidate({ cacheName: "osmsg-shell" })
+    new NetworkFirst({ cacheName: "osmsg-shell-v2", networkTimeoutSeconds: 5 })
 );
 
-// OSMSG API — try network, then cached copy.
+// OSMSG API — network-first with no premature timeout: mega-hashtag queries can take ~75s, so let the
+// request finish; only fall back to cache when the network genuinely fails (offline).
 registerRoute(
-    ({ url }) => url.hostname === "osmsg.osgeonepal.org" && url.pathname.startsWith("/api/"),
+    ({ url }) => url.pathname.startsWith("/api/"),
     new NetworkFirst({
-        cacheName: "osmsg-api",
-        networkTimeoutSeconds: 10,
+        cacheName: "osmsg-api-v2",
         plugins: [new CacheableResponsePlugin({ statuses: [0, 200] })],
     })
 );
@@ -36,3 +36,12 @@ registerRoute(
         ],
     })
 );
+
+// Evict the old caches from the previous strategy so stale app.js / short-timeout API entries can't be served.
+self.addEventListener("activate", (event) => {
+    event.waitUntil(
+        caches.keys().then((keys) =>
+            Promise.all(keys.filter((k) => k === "osmsg-shell" || k === "osmsg-api").map((k) => caches.delete(k)))
+        )
+    );
+});

@@ -19,48 +19,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            bg: "#FAF8F2", surface: "#FFFFFF", "surface-alt": "#F4F0E6",
-            ink: { DEFAULT: "#1A2421", 2: "#3A4744" }, muted: "#717D78",
-            bd: { DEFAULT: "#E5E0D5", strong: "#C8C0AB" },
-            green: { deep: "#1F4D2E", DEFAULT: "#2D5F3F", soft: "#4F8A65", pale: "#E8F0E9", tint: "#F2F7F3" },
-            gold: "#B8860B", silver: "#8A8A8A", bronze: "#A65A2A",
-            danger: { DEFAULT: "#B5523F", pale: "#FAEAE5" },
-            warn: { DEFAULT: "#B8860B", pale: "#F8EFD3" },
-            add: { DEFAULT: "#1F6B3E", ink: "#144A29", soft: "rgba(31,107,62,0.12)" },
-            mod: { DEFAULT: "#C77E3D", ink: "#7A4912", soft: "rgba(199,126,61,0.18)" },
-            del: { DEFAULT: "#B5392C", ink: "#7A2218", soft: "rgba(181,57,44,0.14)" },
-          },
-          fontFamily: {
-            serif: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
-          },
-          boxShadow: {
-            s1: "0 1px 0 rgba(26,36,33,0.04), 0 1px 2px rgba(26,36,33,0.04)",
-            s2: "0 1px 0 rgba(26,36,33,0.05), 0 4px 12px rgba(26,36,33,0.06)",
-            pop: "0 8px 24px rgba(26,36,33,0.10), 0 2px 4px rgba(26,36,33,0.06)",
-          },
-          keyframes: {
-            rot: { to: { transform: "rotate(360deg)" } },
-            pulse2: { "0%,100%": { boxShadow: "0 0 0 0 rgba(45,95,63,0)" }, "0%": { boxShadow: "0 0 0 0 rgba(45,95,63,0.5)" }, "70%": { boxShadow: "0 0 0 8px rgba(45,95,63,0)" } },
-            blink2: { "50%": { opacity: "0.35" } },
-            shim: { "0%": { backgroundPosition: "-200% 0" }, "100%": { backgroundPosition: "200% 0" } },
-            fadein: { from: { opacity: "0", transform: "translateY(6px)" }, to: { opacity: "1", transform: "translateY(0)" } },
-          },
-          animation: {
-            rot: "rot 1.4s linear infinite", pulse2: "pulse2 2s infinite",
-            blink2: "blink2 1.4s infinite", shim: "shim 1.5s linear infinite",
-            fadein: "fadein .35s ease-out both",
-          },
-        }
-      },
-    };
-  </script>
+  <script src="tailwind.config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" defer></script>
 </head>
@@ -68,7 +27,7 @@
 <body>
   <header class="topbar" role="banner">
     <div class="topbar-inner">
-      <a class="brand" href="https://osgeonepal.org" target="_blank" rel="noopener" aria-label="OSGeo Nepal">
+      <a class="brand" href="/" aria-label="OSMSG Leaderboard home">
         <img class="brand-logo" src="https://github.com/osgeonepal.png" alt="OSGeo Nepal logo" width="36" height="36" />
         <span class="min-w-0 leading-tight">
           <span class="brand-title">OSMSG</span>
@@ -81,29 +40,24 @@
           <span class="v" id="wb-localtime">…</span>
           <span class="tz" id="wb-tzname"></span>
         </div>
-        <button id="status-pill" class="status" data-state="loading" aria-pressed="true" aria-label="Connection status">
-          <span class="dot" aria-hidden="true"></span>
-          <i data-lucide="loader" id="status-icon" class="ico-sm ico-spin"></i>
-          <span id="status-text">Connecting</span>
-        </button>
       </div>
     </div>
   </header>
 
   <section class="hero">
-    <h1 class="title">Who's mapping <em>now</em>.</h1>
-    <p class="lede">Live contributor rankings, powered by <a
-        href="https://github.com/osgeonepal/osmsg" target="_blank" rel="noopener">osmsg</a>.</p>
     <form id="query-form" class="search-card" autocomplete="off">
       <div class="field">
-        <label for="hashtag-input"><i data-lucide="hash" class="ico-sm"></i> Hashtags</label>
+        <label for="hashtag-input"><i data-lucide="hash" class="ico-sm"></i> Hashtags
+          <span class="info-tip" tabindex="0" role="img" aria-label="Press Enter to add a hashtag. Leave empty for global stats. Multiple hashtags are OR-combined."
+            data-tip="Type a hashtag and press Enter to add it. Add several to combine them. Then hit Extract.">
+            <i data-lucide="info" class="ico-sm"></i>
+          </span>
+        </label>
         <div class="field-input">
           <i data-lucide="hash" class="ico-md"></i>
           <input id="hashtag-input" type="text" placeholder="hotosm, osmnepal, osgeonepal " />
         </div>
         <div id="chips" class="chips" aria-live="polite"></div>
-        <div class="hint"><i data-lucide="info" class="ico-sm"></i> Press Enter to add. Leave empty for global stats.
-          Multiple hashtags are OR-combined.</div>
       </div>
       <div class="field">
         <label><i data-lucide="calendar-range" class="ico-sm"></i> Time range</label>
@@ -126,6 +80,11 @@
           </div>
         </div>
       </div>
+      <div class="field search-actions">
+        <button type="submit" id="search-btn" class="btn-search">
+          <i data-lucide="arrow-down-to-line" class="ico-sm"></i> Extract
+        </button>
+      </div>
     </form>
   </section>
 
@@ -145,11 +104,11 @@
           <span class="ov-breakdown-meta" id="ov-breakdown-meta"></span>
           <button type="button" class="ov-toggle-btn" id="ov-toggle-btn" aria-expanded="false"
             aria-controls="ov-details">
-            <i data-lucide="plus"></i><span id="ov-toggle-label">Show details</span><i data-lucide="chevron-down"></i>
+            <span id="ov-toggle-label">Show details</span><span class="ov-caret" aria-hidden="true">▾</span>
           </button>
         </div>
         <div id="ov-details" hidden>
-          <div class="overview-strip" id="ov-strip" style="margin-top:6px"></div>
+          <div class="overview-strip" id="ov-strip"></div>
           <div class="ov-breakdown" id="ov-breakdown"></div>
         </div>
       </div>
@@ -160,23 +119,12 @@
       <h2 id="podium-title" class="sr-only">Top three contributors</h2>
       <div class="podium" id="podium" aria-live="polite"></div>
     </section>
-    <section aria-label="Editor Stats">
-      <div class="section-header">
-        <!-- <h2 class="section-title"><i data-lucide="monitor"></i> Editor Stats</h2> -->
-      </div>
-     
-    </section>
     <section aria-label="Leaderboard">
       <div class="table-wrap">
         <div class="table-controls">
           <div class="search-input">
             <i data-lucide="search"></i>
             <input id="search" type="search" placeholder="Search contributor…" aria-label="Search contributor" />
-          </div>
-          <div class="pill-toggle" role="group" aria-label="Filter">
-            <button type="button" data-filter="all" aria-pressed="true">All</button>
-            <button type="button" data-filter="creators">Creators</button>
-            <button type="button" data-filter="modifiers">Modifiers</button>
           </div>
           <span class="stack-legend">
             <span><span class="sw bg-add"></span>created</span>
@@ -219,10 +167,9 @@
           <div class="pagination-controls" id="pg-controls"></div>
           <label class="page-size">Rows
             <select id="pg-size">
-              <option value="10">10</option>
-              <option value="25" selected>25</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
               <option value="50">50</option>
-              <option value="100">100</option>
             </select>
           </label>
         </div>
@@ -266,7 +213,6 @@
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="app.js" defer></script>
   <script src="charts.js" defer></script>
 </body>

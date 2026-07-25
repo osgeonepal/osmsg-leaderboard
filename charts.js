@@ -1,38 +1,6 @@
 // OSMSG Leaderboard — charts.js
-
-const CHART_BAR_COLORS = [
-  "#2D6A4F",
-  "#E76F51",
-  "#457B9D",
-  "#F4A261",
-  "#6A4C93",
-];
-
-const CHART_HASHTAG_COLORS = [
-  "#264653", "#2A9D8F", "#E9C46A", "#F4A261", "#E76F51",
-  "#457B9D", "#6A4C93", "#81B29A", "#F2CC8F", "#A8DADC",
-  "#3D405B", "#81B29A", "#F2CC8F", "#E07A5F", "#3D7068",
-  "#B5838D", "#6D6875", "#A2D2FF", "#CDB4DB", "#FFAFCC",
-];
-
-let _editorBarChart   = null;
-let _hashtagBarChart  = null;
-let _hashtagMetric    = "changes"; // "changes" | "users" | "changesets"
-
-function _isDark() {
-  return matchMedia("(prefers-color-scheme: dark)").matches;
-}
-function _chartColors() {
-  const dark = _isDark();
-  return {
-    grid  : dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.05)",
-    tick  : dark ? "#a0a89e"                : "#717D78",
-    border: dark ? "#1A2421"                : "#ffffff",
-    bg    : dark ? "#111815"                : "#ffffff",
-  };
-}
-
-const CHART_HEIGHT = 260;
+// The Editors and Trending-hashtags cards are plain HTML lists (see renderEditorBarChart /
+// renderHashtagPieChart); no charting library is used.
 
 function _ensureChartsSection() {
   if (document.getElementById("osmsg-charts-row")) return;
@@ -152,10 +120,7 @@ function _ensureChartsSection() {
           Editors
         </div>
         <div id="editor-bar-legend" class="osmsg-bar-legend"></div>
-        <div class="osmsg-chart-canvas-wrap" style="height:${CHART_HEIGHT}px;">
-          <canvas id="editor-bar-canvas" role="img"
-            aria-label="Bar chart of map changes by editor software"></canvas>
-        </div>
+        <div class="osmsg-chart-canvas-wrap" role="img" aria-label="Editors ranked by contributors"></div>
       </div>
 
       <div id="hashtag-chart-card" class="osmsg-chart-card" hidden>
@@ -168,289 +133,145 @@ function _ensureChartsSection() {
             <line x1="10" y1="3" x2="8" y2="21"/>
             <line x1="16" y1="3" x2="14" y2="21"/>
           </svg>
-          Contributions by hashtag
-        </div>
-        <div class="osmsg-metric-toggle" id="hashtag-metric-toggle">
-          <button class="osmsg-metric-btn active" data-metric="changes">Map changes</button>
-          <button class="osmsg-metric-btn" data-metric="users">Users</button>
-          <button class="osmsg-metric-btn" data-metric="changesets">Changesets</button>
+          Trending hashtags
         </div>
         <div class="osmsg-hashtag-stat-row">
           <span id="hashtag-stat-total"></span>
           <span id="hashtag-stat-count"></span>
         </div>
-        <div class="osmsg-chart-canvas-wrap" id="hashtag-canvas-wrap">
-          <canvas id="hashtag-bar-canvas" role="img"
-            aria-label="Horizontal bar chart of contributions per hashtag"></canvas>
-        </div>
+        <div class="osmsg-chart-canvas-wrap" id="hashtag-canvas-wrap" role="img"
+          aria-label="Hashtags ranked by number of contributors"></div>
       </div>
 
     </div>`;
 
   main.appendChild(section);
-
-
-  document.getElementById("hashtag-metric-toggle").addEventListener("click", (e) => {
-    const btn = e.target.closest(".osmsg-metric-btn");
-    if (!btn) return;
-    document.querySelectorAll(".osmsg-metric-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    _hashtagMetric = btn.dataset.metric;
-    renderHashtagPieChart(); // re-render with new metric
-  });
 }
 
 
+
+const _PER_PAGE = 5;
+let _edPage = 0, _edLen = -1, _edMetric = "users"; // "users" (primary) | "edits"
+let _htPage = 0, _htLen = -1, _htMetric = "users"; // "users" (primary) | "edits"
+
+// A small skeleton shown in both chart cards while their data loads (same idea as the table skeleton).
+function setChartsLoading() {
+  _ensureChartsSection();
+  const skel = Array.from({ length: 4 }, () => `
+    <div class="ht-row">
+      <div class="ht-head"><span class="skeleton" style="height:12px;width:130px"></span><span class="skeleton" style="height:12px;width:38px"></span></div>
+      <div class="ht-bar"><div class="skeleton" style="height:6px;width:70%"></div></div>
+    </div>`).join("");
+  const ec = document.getElementById("editor-chart-card");
+  const ew = ec && ec.querySelector(".osmsg-chart-canvas-wrap");
+  const el = document.getElementById("editor-bar-legend");
+  if (ec && ew) { ec.hidden = false; if (el) el.innerHTML = `<span class="osmsg-sub">Loading…</span>`; ew.style.height = "auto"; ew.innerHTML = skel; }
+  const hc = document.getElementById("hashtag-chart-card");
+  const hw = document.getElementById("hashtag-canvas-wrap");
+  const ht = document.getElementById("hashtag-stat-total");
+  const hn = document.getElementById("hashtag-stat-count");
+  if (hc && hw) { hc.hidden = false; if (ht) ht.textContent = "Loading…"; if (hn) hn.textContent = ""; hw.style.height = "auto"; hw.innerHTML = skel; }
+}
+
+// Render a paginated list (rows + a prev/next footer) into `wrap`; wires the footer buttons to onPage.
+function _pagedList(wrap, items, page, rowFn, gmax, onPage) {
+  const pages = Math.ceil(items.length / _PER_PAGE);
+  const p = Math.min(Math.max(0, page), pages - 1);
+  const start = p * _PER_PAGE;
+  const slice = items.slice(start, start + _PER_PAGE);
+  let html = slice.map((it) => rowFn(it, gmax)).join("");
+  if (pages > 1) {
+    html += `<div class="ht-pager">
+      <button class="ht-pg" data-dir="-1" ${p === 0 ? "disabled" : ""} aria-label="Previous">&lsaquo;</button>
+      <span class="ht-pg-info">${start + 1}–${start + slice.length} of ${items.length}</span>
+      <button class="ht-pg" data-dir="1" ${p >= pages - 1 ? "disabled" : ""} aria-label="Next">&rsaquo;</button>
+    </div>`;
+  }
+  wrap.style.height = "auto";
+  wrap.innerHTML = html;
+  wrap.querySelectorAll(".ht-pg").forEach((b) => {
+    b.onclick = () => { if (!b.disabled) onPage(p + parseInt(b.dataset.dir, 10)); };
+  });
+  return p;
+}
 
 function renderEditorBarChart() {
   _ensureChartsSection();
-
-  const card    = document.getElementById("editor-chart-card");
+  const card = document.getElementById("editor-chart-card");
   const legendEl = document.getElementById("editor-bar-legend");
-  const canvasEl = document.getElementById("editor-bar-canvas");
-  if (!card || !legendEl || !canvasEl) return;
+  const wrap = card ? card.querySelector(".osmsg-chart-canvas-wrap") : null;
+  if (!card || !legendEl || !wrap) return;
 
-  const editorStats = state.editorStats;
-  if (!editorStats || !editorStats.top5 || !editorStats.top5.length) {
-    card.hidden = true;
-    return;
-  }
-
-  const top5 = editorStats.top5;
+  const src = (state.editorStats && state.editorStats.all) || [];
+  if (!src.length) { _edPage = 0; _edLen = -1; card.hidden = true; return; }
   card.hidden = false;
 
-  legendEl.innerHTML = top5.map((r, i) => {
-    const color = CHART_BAR_COLORS[i] || CHART_BAR_COLORS[4];
-    return `<span class="osmsg-bar-legend-item">
-      <span class="osmsg-bar-legend-dot" style="background:${color}"></span>
-      ${escapeHtml(r.editor)}
-      <span style="color:var(--ink-2);font-weight:500;">${fmt.format(r.users)}u</span>
+  const byUsers = _edMetric === "users";
+  const valueOf = (r) => (byUsers ? (r.users || 0) : (r.changes || 0));
+  const all = src.slice().sort((a, b) => valueOf(b) - valueOf(a));
+  if (all.length !== _edLen) { _edPage = 0; _edLen = all.length; }
+
+  const fmtVal = byUsers ? ((n) => fmt.format(n)) : ((typeof compact === "function") ? compact : fmt.format);
+  const gmax = Math.max(...all.map(valueOf), 1);
+  legendEl.innerHTML = `
+    <span class="osmsg-sub">${byUsers ? "Contributors per editor" : "Edits per editor"}</span>
+    <span class="metric-mini" role="group" aria-label="Editor metric">
+      <button type="button" class="mm-btn${byUsers ? " active" : ""}" data-metric="users" title="Rank editors by number of contributors">Users</button>
+      <button type="button" class="mm-btn${byUsers ? "" : " active"}" data-metric="edits" title="Rank editors by map changes (edits)">Edits</button>
     </span>`;
-  }).join("");
-
-  if (_editorBarChart) {
-    _editorBarChart.destroy();
-    _editorBarChart = null;
-  }
-
-  const { grid, tick } = _chartColors();
-
-  _editorBarChart = new Chart(canvasEl, {
-    type: "bar",
-    data: {
-      labels: top5.map(r => r.editor),
-      datasets: [{
-        label: "Map changes",
-        data: top5.map(r => r.changes),
-        backgroundColor: top5.map((_, i) => CHART_BAR_COLORS[i] || CHART_BAR_COLORS[4]),
-        borderRadius: 7,
-        borderSkipped: false,
-        barPercentage: 0.65,
-      }],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          padding: 10,
-          callbacks: {
-            title: items => items[0].label,
-            label: ctx => {
-              const r = top5[ctx.dataIndex];
-              return [
-                `  Changes    : ${fmt.format(r.changes)}`,
-                `  Users      : ${fmt.format(r.users)}`,
-                `  Changesets : ${fmt.format(r.changesets)}`,
-              ];
-            },
-          },
-        },
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { color: tick, maxRotation: 20, font: { size: 11 } },
-        },
-        y: {
-          grid: { color: grid },
-          border: { dash: [3, 3] },
-          ticks: {
-            color: tick,
-            font: { size: 11 },
-            callback: v =>
-              v >= 1_000_000 ? (v / 1_000_000).toFixed(1) + "M"
-              : v >= 1_000   ? (v / 1_000).toFixed(v % 1_000 === 0 ? 0 : 1) + "k"
-              : v,
-          },
-        },
-      },
-    },
+  legendEl.querySelectorAll(".mm-btn").forEach((b) => {
+    b.onclick = () => { _edMetric = b.dataset.metric; _edPage = 0; renderEditorBarChart(); };
   });
+  const rowFn = (r, max) => `
+    <div class="ht-row">
+      <div class="ht-head">
+        <span class="ht-tag" title="${escapeHtml(r.editor)} · ${fmt.format(r.users)} contributors · ${fmt.format(r.changes)} map changes">${escapeHtml(r.editor)}</span>
+        <span class="ht-val">${fmtVal(valueOf(r))}</span>
+      </div>
+      <div class="ht-bar"><div class="ht-fill" style="width:${Math.max(3, (valueOf(r) / max) * 100)}%"></div></div>
+    </div>`;
+  _edPage = _pagedList(wrap, all, _edPage, rowFn, gmax, (np) => { _edPage = np; renderEditorBarChart(); });
 }
 
-
-
-function renderHashtagPieChart() {   
+function renderHashtagPieChart() {
   _ensureChartsSection();
+  const card = document.getElementById("hashtag-chart-card");
+  const wrapEl = document.getElementById("hashtag-canvas-wrap");
+  const totalEl = document.getElementById("hashtag-stat-total");
+  const countEl = document.getElementById("hashtag-stat-count");
+  if (!card || !wrapEl) return;
 
-  const card     = document.getElementById("hashtag-chart-card");
-  const canvasEl = document.getElementById("hashtag-bar-canvas");
-  const wrapEl   = document.getElementById("hashtag-canvas-wrap");
-  const totalEl  = document.getElementById("hashtag-stat-total");
-  const countEl  = document.getElementById("hashtag-stat-count");
-  if (!card || !canvasEl || !wrapEl) return;
+  const src = (state.hashtagTrends || [])
+    .filter((e) => e && e.hashtag && e.users > 0)
+    .map((e) => ({ tag: "#" + String(e.hashtag).replace(/^#/, ""), users: e.users || 0, edits: e.edits || 0 }));
 
-
-  const aggChanges    = {};
-  const aggUsers      = {};
-  const aggChangesets = {};
-
-  for (const r of state.rows) {
-    const tags = (r.hashtags || [])
-      .filter(Boolean)
-      .map(h => "#" + String(h).replace(/^#/, "").toLowerCase());
-
-    const keys = tags.length ? tags : ["(no hashtag)"];
-    const share = 1 / keys.length; 
-
-    for (const t of keys) {
-      aggChanges[t]    = (aggChanges[t]    || 0) + r.map_changes    * share;
-      aggChangesets[t] = (aggChangesets[t] || 0) + r.changesets     * share;
-      
-      aggUsers[t]      = (aggUsers[t]      || 0) + share;
-    }
-  }
-
-  for (const k of Object.keys(aggUsers)) aggUsers[k] = Math.round(aggUsers[k]);
-
-  const aggMap = {
-    changes   : aggChanges,
-    users     : aggUsers,
-    changesets: aggChangesets,
-  };
-  const dataMap = aggMap[_hashtagMetric] || aggChanges;
-
-  const entries = Object.entries(dataMap)
-    .map(([k, v]) => ({ tag: k, value: Math.round(v) }))
-    .filter(e => e.value > 0)
-    .sort((a, b) => b.value - a.value);
-
-  if (entries.length < 2) {
-    card.hidden = true;
-    return;
-  }
-
+  if (src.length < 2) { _htPage = 0; _htLen = -1; card.hidden = true; return; }
   card.hidden = false;
 
-  const MAX_BARS  = 15;
-  const shown     = entries.slice(0, MAX_BARS);
-  const total     = entries.reduce((s, e) => s + e.value, 0);
-  const shownSum  = shown.reduce((s, e) => s + e.value, 0);
+  const byUsers = _htMetric === "users";
+  const valueOf = (e) => (byUsers ? e.users : e.edits);
+  const trends = src.slice().sort((a, b) => valueOf(b) - valueOf(a));
+  if (trends.length !== _htLen) { _htPage = 0; _htLen = trends.length; }
 
-  const metricLabel = { changes: "map changes", users: "users", changesets: "changesets" }[_hashtagMetric];
-  totalEl.textContent = `Total: ${fmt.format(total)} ${metricLabel}`;
-  countEl.textContent = entries.length > MAX_BARS
-    ? `Showing top ${MAX_BARS} of ${entries.length} hashtags`
-    : `${entries.length} hashtag${entries.length === 1 ? "" : "s"}`;
-
-  const barH = 34;
-  const canvasH = shown.length * barH + 60;
-  wrapEl.style.height = canvasH + "px";
-
-  if (_hashtagBarChart) {
-    _hashtagBarChart.destroy();
-    _hashtagBarChart = null;
+  const fmtVal = byUsers ? ((n) => fmt.format(n)) : ((typeof compact === "function") ? compact : fmt.format);
+  const gmax = Math.max(...trends.map(valueOf), 1);
+  if (totalEl) totalEl.textContent = byUsers ? "Contributors per hashtag" : "Map changes per hashtag";
+  if (countEl) {
+    countEl.innerHTML = `<span class="metric-mini" role="group" aria-label="Hashtag metric">
+      <button type="button" class="mm-btn${byUsers ? " active" : ""}" data-metric="users" title="Rank hashtags by number of contributors">Users</button>
+      <button type="button" class="mm-btn${byUsers ? "" : " active"}" data-metric="edits" title="Rank hashtags by map changes (edits)">Edits</button>
+    </span>`;
+    countEl.querySelectorAll(".mm-btn").forEach((b) => {
+      b.onclick = () => { _htMetric = b.dataset.metric; _htPage = 0; renderHashtagPieChart(); };
+    });
   }
-
-  const { grid, tick, bg } = _chartColors();
-
-
-  function tagColor(tag) {
-    let h = 0;
-    for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) >>> 0;
-    return CHART_HASHTAG_COLORS[h % CHART_HASHTAG_COLORS.length];
-  }
-
-  const colors = shown.map(e => tagColor(e.tag));
-
-  _hashtagBarChart = new Chart(canvasEl, {
-    type: "bar",
-    data: {
-      labels: shown.map(e => e.tag),
-      datasets: [{
-        label: metricLabel,
-        data: shown.map(e => e.value),
-        backgroundColor: colors,
-        borderRadius: 5,
-        borderSkipped: false,
-        barPercentage: 0.72,
-      }],
-    },
-    options: {
-      indexAxis: "y",          
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: { padding: { right: 60 } },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          padding: 10,
-          callbacks: {
-            title: items => items[0].label,
-            label: ctx => {
-              const e = shown[ctx.dataIndex];
-              const pct = total ? ((e.value / total) * 100).toFixed(1) : "0";
-              return [
-                `  ${metricLabel}: ${fmt.format(e.value)}`,
-                `  Share: ${pct}%`,
-              ];
-            },
-          },
-        },
-        afterDraw: null,
-      },
-      scales: {
-        x: {
-          grid: { color: grid },
-          border: { dash: [3, 3] },
-          ticks: {
-            color: tick,
-            font: { size: 11 },
-            callback: v =>
-              v >= 1_000_000 ? (v / 1_000_000).toFixed(1) + "M"
-              : v >= 1_000   ? (v / 1_000).toFixed(0) + "k"
-              : v,
-          },
-        },
-        y: {
-          grid: { display: false },
-          ticks: {
-            color: tick,
-            font: { size: 12 },
-            autoSkip: false,
-          },
-        },
-      },
-    },
-    plugins: [{
-      id: "hashtagValueLabels",
-      afterDatasetsDraw(chart) {
-        const { ctx, data, scales: { x, y } } = chart;
-        ctx.save();
-        ctx.font = "500 11px sans-serif";
-        ctx.fillStyle = tick;
-        ctx.textBaseline = "middle";
-
-        data.datasets[0].data.forEach((val, i) => {
-          const pct = total ? ((val / total) * 100).toFixed(1) : "0";
-          const xPos = x.getPixelForValue(val) + 6;
-          const yPos = y.getPixelForValue(i);
-          ctx.fillText(`${fmt.format(val)}  ${pct}%`, xPos, yPos);
-        });
-        ctx.restore();
-      },
-    }],
-  });
+  const rowFn = (e, max) => `
+    <div class="ht-row">
+      <div class="ht-head">
+        <span class="ht-tag" title="${e.tag} · ${fmt.format(e.users)} contributors · ${fmt.format(e.edits)} map changes">${e.tag}</span>
+        <span class="ht-val">${fmtVal(valueOf(e))}</span>
+      </div>
+      <div class="ht-bar"><div class="ht-fill" style="width:${Math.max(3, (valueOf(e) / max) * 100)}%"></div></div>
+    </div>`;
+  _htPage = _pagedList(wrapEl, trends, _htPage, rowFn, gmax, (np) => { _htPage = np; renderHashtagPieChart(); });
 }
