@@ -1,5 +1,7 @@
-// OSMSG Leaderboard 
-const API_BASE = window.location.origin;
+// OSMSG Leaderboard
+// Single source for the API origin: overridable at deploy time via window.OSMSG_API_BASE (e.g. an
+// env-generated config script), else the page's own origin. Everything (fetches, docs link) derives from it.
+const API_BASE = window.OSMSG_API_BASE || window.location.origin;
 const HEALTH_ENDPOINT = "/health";
 const ALL_TIME_START = "2004-08-09T00:00:00Z";
 const RANGE_HOURS = { "1h": 1, "24h": 24, "7d": 168, "30d": 720, "90d": 2160 };
@@ -1293,6 +1295,20 @@ $("#ov-toggle-btn").addEventListener("click", () => {
   setDetailsOpen(btn.getAttribute("aria-expanded") !== "true");
 });
 
+// The "Updated" pill doubles as a manual refresh: re-run the active query, or just re-check health
+// when nothing is loaded yet.
+function refreshStats() {
+  if (state.hashtags.length) runQuery();
+  else fetchHealth();
+}
+$("#last-updated")?.addEventListener("click", refreshStats);
+$("#last-updated")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    refreshStats();
+  }
+});
+
 const userModal = $("#user-modal");
 $("#user-modal-close").addEventListener("click", closeUserModal);
 userModal.addEventListener("click", (e) => {
@@ -1303,6 +1319,15 @@ document.addEventListener("keydown", (e) => {
 });
 
 function boot() {
+  const swaggerURL = `${API_BASE}/docs/swagger`;
+  const apiLink = $("#api-link");
+  if (apiLink) {
+    apiLink.href = swaggerURL;
+    const host = $("#api-host");
+    if (host) host.textContent = new URL(API_BASE).host;
+  }
+  const apiDocsLink = $("#api-docs-link");
+  if (apiDocsLink) apiDocsLink.href = swaggerURL;
   readURL();
   renderChips();
   renderWindowBar();
