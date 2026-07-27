@@ -9,8 +9,8 @@
     --ink: #1A2421;
     --ink-2: #3A4744;
     --muted: #717D78;
-    --bd: #E5E0D5;
-    --bd-strong: #C8C0AB;
+    --bd: #E4E8E4;
+    --bd-strong: #C4CBC4;
     --green: #2D5F3F;
     --green-deep: #1F4D2E;
     --green-soft: #4F8A65;
@@ -1901,7 +1901,7 @@ main>section {
     position: sticky;
     top: 0;
     z-index: 10;
-    background: rgba(244, 240, 230, 0.5);
+    background: rgba(242, 247, 243, 0.6);
 }
 
 .lb th.sortable {
@@ -2302,7 +2302,7 @@ main>section {
     width: 40px;
     height: 40px;
     margin: 0 auto 12px;
-    color: var(--bd-strong);
+    color: var(--green-soft);
 }
 
 .empty h3 {
