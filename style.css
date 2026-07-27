@@ -3,9 +3,9 @@
  * This file contains the plain CSS for component-level classes.
  */
 :root {
-    --bg: #FAF8F2;
+    --bg: #FCFCFB;
     --surface: #FFFFFF;
-    --surface-alt: #F4F0E6;
+    --surface-alt: #F3F3F1;
     --ink: #1A2421;
     --ink-2: #3A4744;
     --muted: #717D78;
@@ -202,7 +202,7 @@ a:hover {
     top: 0;
     z-index: 50;
     border-bottom: 1px solid var(--bd);
-    background: rgba(250, 248, 242, 0.85);
+    background: rgba(252, 252, 251, 0.85);
     backdrop-filter: saturate(140%) blur(12px);
 }
 
