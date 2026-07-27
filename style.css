@@ -981,6 +981,22 @@ main>section {
 /* Search action + info tooltip + hashtag chip button */
 .search-actions {
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.extract-status {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted);
+    text-align: center;
+    min-height: 14px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.extract-status.on {
+    opacity: 1;
 }
 
 .btn-search {

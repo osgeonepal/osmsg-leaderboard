@@ -404,6 +404,14 @@ function setBusy(busy) {
   $$(".preset button").forEach((b) => (b.disabled = on));
 }
 
+// Names the section currently loading, shown under the Extract button while the sequential fetches run.
+function setStatus(msg) {
+  const el = $("#extract-status");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.classList.toggle("on", !!msg);
+}
+
 // One Search loads each section SEQUENTIALLY (summary -> leaderboard -> tags -> trending -> editors) so
 // the small backend is never hit by several heavy queries at once; each renders as it arrives.
 async function runQuery() {
@@ -445,23 +453,28 @@ async function runQuery() {
   };
   setBusy(true);
   try {
+    setStatus("Fetching summary…");
     const summary = await apiGet("summary", param({}), ctrl.signal);
     if (!alive()) return;
     state.summary = summary;
     renderOverviewTotals();
     renderOverviewDetails();
 
+    setStatus("Fetching leaderboard…");
     await loadLeaderboardPage(true);
     if (!alive()) return;
 
+    setStatus("Fetching trending hashtags…");
     const trending = await apiGet("hashtags", param({ limit: "50" }), ctrl.signal);
     if (!alive()) return;
     state.hashtagTrends = trending;
     if (typeof renderHashtagPieChart === "function") renderHashtagPieChart();
 
+    setStatus("Fetching editors…");
     await fetchEditorStats();
     if (!alive()) return;
 
+    setStatus("Fetching tag breakdown…");
     const tags = await apiGet("tags", param({ limit: "200" }), ctrl.signal);
     if (!alive()) return;
     state.tagRows = tags;
@@ -470,6 +483,7 @@ async function runQuery() {
     if (err?.name !== "AbortError") console.warn("OSMSG query failed:", err);
   } finally {
     setBusy(false);
+    setStatus("");
   }
 }
 
