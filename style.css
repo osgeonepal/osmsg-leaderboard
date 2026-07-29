@@ -1400,6 +1400,16 @@ main>section {
 }
 
 /* tag breakdown */
+.tag-legend {
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+}
+
 .tag-breakdown-grid {
     display: grid;
     gap: 10px;
@@ -1449,6 +1459,16 @@ main>section {
 .tag-key-totals .m,
 .tag-value-counts .m {
     color: var(--mod-ink);
+}
+
+.tag-key-len {
+    color: var(--green-deep);
+    background: var(--green-pale);
+    border-radius: 9999px;
+    padding: 0 7px;
+    font-weight: 600;
+    font-size: 10.5px;
+    line-height: 17px;
 }
 
 .tag-key-bar {

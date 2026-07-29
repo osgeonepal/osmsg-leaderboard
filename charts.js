@@ -27,6 +27,7 @@ function _ensureChartsSection() {
       flex-direction: column;
       min-width: 0;
     }
+    .osmsg-chart-card[hidden] { display: none; }
     .osmsg-chart-title {
       font-size: 11px;
       text-transform: uppercase;

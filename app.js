@@ -112,10 +112,10 @@ const refreshIcons = (root) =>
   window.lucide?.createIcons?.(
     root
       ? {
-          attrs: { "stroke-width": 2 },
-          nameAttr: "data-lucide",
-          icons: window.lucide.icons,
-        }
+        attrs: { "stroke-width": 2 },
+        nameAttr: "data-lucide",
+        icons: window.lucide.icons,
+      }
       : { attrs: { "stroke-width": 2 } }
   );
 const isoUTC = (d) => d.toISOString().replace(/\.\d+Z$/, "Z");
@@ -231,11 +231,11 @@ function renderChips() {
     .join("");
   chipsEl.querySelectorAll("button").forEach(
     (b) =>
-      (b.onclick = () => {
-        state.hashtags.splice(+b.dataset.i, 1);
-        renderChips();
-        apply();
-      })
+    (b.onclick = () => {
+      state.hashtags.splice(+b.dataset.i, 1);
+      renderChips();
+      apply();
+    })
   );
   refreshIcons();
 }
@@ -331,13 +331,13 @@ function setRangePreset(k) {
 }
 $$(".preset button").forEach(
   (b) =>
-    (b.onclick = () => {
-      setRangePreset(b.dataset.range);
-      if (b.dataset.range !== "custom") {
-        state.customStart = state.customEnd = null;
-        apply();
-      }
-    })
+  (b.onclick = () => {
+    setRangePreset(b.dataset.range);
+    if (b.dataset.range !== "custom") {
+      state.customStart = state.customEnd = null;
+      apply();
+    }
+  })
 );
 
 // Server sort names differ from the table's column keys in one spot.
@@ -484,6 +484,10 @@ async function runQuery() {
   } finally {
     setBusy(false);
     setStatus("");
+    if (alive()) {
+      if (typeof renderHashtagPieChart === "function") renderHashtagPieChart();
+      if (typeof renderEditorBarChart === "function") renderEditorBarChart();
+    }
   }
 }
 
@@ -590,14 +594,16 @@ function aggregateTagStats(rows) {
     const ts = r.tag_stats;
     for (const key in ts) {
       const vals = ts[key];
-      const a = (agg[key] ||= { values: {}, totalC: 0, totalM: 0 });
+      const a = (agg[key] ||= { values: {}, totalC: 0, totalM: 0, totalL: 0 });
       for (const v in vals) {
-        const c = vals[v].c, m = vals[v].m;
-        const slot = (a.values[v] ||= { c: 0, m: 0 });
+        const c = vals[v].c, m = vals[v].m, l = vals[v].len || 0;
+        const slot = (a.values[v] ||= { c: 0, m: 0, l: 0 });
         slot.c += c;
         slot.m += m;
+        slot.l += l;
         a.totalC += c;
         a.totalM += m;
+        a.totalL += l;
       }
     }
   }
@@ -615,6 +621,8 @@ function tagBreakdownHtml(agg, { maxKeys = 10 } = {}) {
   const cntM = (n) => (n ? `<span class="m">~${fmt.format(n)}</span>` : "");
 
   let html =
+    `<div class="tag-legend">Feature counts: <span class="c">+ created</span> <span class="m">~ modified</span>` +
+    ` · <span class="tag-key-len">km</span> = length of ways drawn</div>` +
     `<div class="tag-breakdown-grid">` +
     keys
       .slice(0, maxKeys)
@@ -623,7 +631,7 @@ function tagBreakdownHtml(agg, { maxKeys = 10 } = {}) {
         return `<div class="tag-key-card">
       <div class="tag-key-head">
         <span class="tag-key-name">${escapeHtml(key)}</span>
-        <span class="tag-key-totals">${cntC(d.totalC)}${cntM(d.totalM)}</span>
+        <span class="tag-key-totals">${kmBadge(d.totalL)}${cntC(d.totalC)}${cntM(d.totalM)}</span>
       </div>
       <div class="tag-key-bar" title="${d.totalC} created · ${d.totalM} modified">
         ${segDiv("seg-c", pct(d.totalC, t))}${segDiv("seg-m", pct(d.totalM, t))}
@@ -658,29 +666,29 @@ const OV_CELLS = [
 ];
 const renderOvCell =
   (data) =>
-  ([l, k, ic, mod, desc]) => {
-    const tip = escapeHtml(`${desc} · click to toggle exact numbers`);
-    if (mod === "split") {
-      const c = data[k] || 0, m = data[k + "_mod"] || 0;
-      const isZero = !c && !m;
-      return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}" title="${tip}">
+    ([l, k, ic, mod, desc]) => {
+      const tip = escapeHtml(`${desc} · click to toggle exact numbers`);
+      if (mod === "split") {
+        const c = data[k] || 0, m = data[k + "_mod"] || 0;
+        const isZero = !c && !m;
+        return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}" title="${tip}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
       <div class="val"><span class="c">+${numHtml(c)}</span><span class="m">~${numHtml(m)}</span></div>
     </div>`;
-    }
-    if (mod === "elem") {
-      const c = data[k + "_c"] || 0, m = data[k + "_m"] || 0, d = data[k + "_d"] || 0;
-      const isZero = !c && !m && !d;
-      return `<div class="ov-cell ov-elem${isZero ? " is-zero" : ""}" title="${tip}">
+      }
+      if (mod === "elem") {
+        const c = data[k + "_c"] || 0, m = data[k + "_m"] || 0, d = data[k + "_d"] || 0;
+        const isZero = !c && !m && !d;
+        return `<div class="ov-cell ov-elem${isZero ? " is-zero" : ""}" title="${tip}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
       <div class="val"><span class="c" title="created">+${numHtml(c)}</span><span class="m" title="modified">~${numHtml(m)}</span><span class="d" title="deleted">−${numHtml(d)}</span></div>
     </div>`;
-    }
-    return `<div class="ov-cell${mod ? " " + mod : ""}${data[k] ? "" : " is-zero"}" title="${tip}">
+      }
+      return `<div class="ov-cell${mod ? " " + mod : ""}${data[k] ? "" : " is-zero"}" title="${tip}">
     <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
     <div class="val">${numHtml(data[k] || 0)}</div>
   </div>`;
-  };
+    };
 const ovCellsHtml = (data) => OV_CELLS.map(renderOvCell(data)).join("");
 const ovTotalsHtml = (data) => OV_CELLS_TOTALS.map(renderOvCell(data)).join("");
 // The /summary totals mapped to the overview's element cells; created/modified/deleted fold node+way+rel.
@@ -714,12 +722,19 @@ function tagRowsToData(rows) {
 function tagRowsToAgg(rows) {
   const agg = {};
   for (const r of rows) {
-    const a = (agg[r.tag_key] ||= { values: {}, totalC: 0, totalM: 0 });
-    const slot = (a.values[r.tag_value] ||= { c: 0, m: 0 });
-    slot.c += r.creates || 0; slot.m += r.modifies || 0;
-    a.totalC += r.creates || 0; a.totalM += r.modifies || 0;
+    const a = (agg[r.tag_key] ||= { values: {}, totalC: 0, totalM: 0, totalL: 0 });
+    const slot = (a.values[r.tag_value] ||= { c: 0, m: 0, l: 0 });
+    slot.c += r.creates || 0; slot.m += r.modifies || 0; slot.l += r.length_m || 0;
+    a.totalC += r.creates || 0; a.totalM += r.modifies || 0; a.totalL += r.length_m || 0;
   }
   return agg;
+}
+
+function kmBadge(metres) {
+  if (!metres || metres < 100) return "";
+  const km = metres / 1000;
+  const txt = km >= 100 ? fmt.format(Math.round(km)) : km.toFixed(1);
+  return `<span class="tag-key-len" title="${fmt.format(Math.round(metres))} m of open ways">${txt} km</span>`;
 }
 
 function setOverviewLoading() {
@@ -787,9 +802,9 @@ function renderPodium() {
       continue;
     }
 
-    const created  = (r.nodes_created  || 0) + (r.ways_created  || 0) + (r.rels_created  || 0);
+    const created = (r.nodes_created || 0) + (r.ways_created || 0) + (r.rels_created || 0);
     const modified = (r.nodes_modified || 0) + (r.ways_modified || 0) + (r.rels_modified || 0);
-    const deleted  = (r.nodes_deleted  || 0) + (r.ways_deleted  || 0) + (r.rels_deleted  || 0);
+    const deleted = (r.nodes_deleted || 0) + (r.ways_deleted || 0) + (r.rels_deleted || 0);
 
     // No editor badge here — editor info is shown only in the user modal
     div.innerHTML = `
@@ -823,29 +838,29 @@ function renderPodium() {
 
 function shortEditor(s) {
   if (!s) return "Unknown";
-  const iD = s.match(/iD\s*([\d.]+)/i);   if (iD)   return "iD " + iD[1];
+  const iD = s.match(/iD\s*([\d.]+)/i); if (iD) return "iD " + iD[1];
   const josm = s.match(/JOSM\/([\d.]+)/i); if (josm) return "JOSM " + josm[1];
   const rapid = s.match(/Rapid\s*([\d.]+)/i); if (rapid) return "Rapid " + rapid[1];
-  if (/Vespucci/i.test(s))       return "Vespucci";
+  if (/Vespucci/i.test(s)) return "Vespucci";
   if (/StreetComplete/i.test(s)) return "StreetComplete";
-  if (/OsmAnd/i.test(s))        return "OsmAnd";
+  if (/OsmAnd/i.test(s)) return "OsmAnd";
   return s.length > 22 ? s.slice(0, 20) + "…" : s;
 }
 function editorFamily(s) {
   if (!s) return null;
-  if (/iD/i.test(s))            return "iD";
-  if (/JOSM/i.test(s))          return "JOSM";
-  if (/Rapid/i.test(s))         return "Rapid";
-  if (/Vespucci/i.test(s))      return "Vespucci";
+  if (/iD/i.test(s)) return "iD";
+  if (/JOSM/i.test(s)) return "JOSM";
+  if (/Rapid/i.test(s)) return "Rapid";
+  if (/Vespucci/i.test(s)) return "Vespucci";
   if (/StreetComplete/i.test(s)) return "StreetComplete";
   return null;
 }
 function editorColor(family) {
   const map = {
-    iD:             ["#E6F1FB", "#185FA5"],
-    JOSM:           ["#FAEEDA", "#854F0B"],
-    Rapid:          ["#EEEDFE", "#534AB7"],
-    Vespucci:       ["#EAF3DE", "#3B6D11"],
+    iD: ["#E6F1FB", "#185FA5"],
+    JOSM: ["#FAEEDA", "#854F0B"],
+    Rapid: ["#EEEDFE", "#534AB7"],
+    Vespucci: ["#EAF3DE", "#3B6D11"],
     StreetComplete: ["#FAECE7", "#993C1D"],
   };
   return map[family] || ["#F1EFE8", "#5F5E5A"];
