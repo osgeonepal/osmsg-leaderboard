@@ -664,6 +664,8 @@ const OV_CELLS = [
   ["Natural", "natural", "trees", "split", "natural=* . + created  ~ modified"],
   ["Amenities", "amenities", "coffee", "split", "amenity=* . + created  ~ modified"],
 ];
+// Only line features carry a meaningful length; areas (buildings, landuse) and points (POIs) do not.
+const LINEAR_CELLS = new Set(["highways", "waterways"]);
 const renderOvCell =
   (data) =>
     ([l, k, ic, mod, desc]) => {
@@ -671,9 +673,17 @@ const renderOvCell =
       if (mod === "split") {
         const c = data[k] || 0, m = data[k + "_mod"] || 0;
         const isZero = !c && !m;
+        const metres = data[k + "_len"] || 0;
+        // Length is meaningful only for line features (highway/waterway); areas/points get no pill.
+        const showKm = LINEAR_CELLS.has(k) && metres >= 100;
+        const kmC = `${compact(metres / 1000)} km`, kmF = `${fmt.format(Math.round(metres / 1000))} km`;
+        const pill = showKm
+          ? `<span class="ov-len-pill" data-compact="${kmC}" data-full="${kmF}" title="${escapeHtml(l)} — length of ways created (created features only); click for the full number">${kmC}</span>`
+          : "";
         return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}" title="${tip}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
-      <div class="val"><span class="c">+${numHtml(c)}</span><span class="m">~${numHtml(m)}</span></div>
+      <div class="val"><span class="c" title="created">+${numHtml(c)}</span><span class="m" title="modified">~${numHtml(m)}</span></div>
+      ${pill}
     </div>`;
       }
       if (mod === "elem") {
@@ -716,6 +726,7 @@ function tagRowsToData(rows) {
     if (!f) continue;
     out[f] += r.creates || 0;
     out[f + "_mod"] += r.modifies || 0;
+    out[f + "_len"] = (out[f + "_len"] || 0) + (r.length_m || 0);
   }
   return out;
 }
@@ -730,11 +741,14 @@ function tagRowsToAgg(rows) {
   return agg;
 }
 
-function kmBadge(metres) {
+function kmText(metres) {
   if (!metres || metres < 100) return "";
   const km = metres / 1000;
-  const txt = km >= 100 ? fmt.format(Math.round(km)) : km.toFixed(1);
-  return `<span class="tag-key-len" title="${fmt.format(Math.round(metres))} m of open ways">${txt} km</span>`;
+  return (km >= 100 ? fmt.format(Math.round(km)) : km.toFixed(1)) + " km";
+}
+function kmBadge(metres) {
+  const t = kmText(metres);
+  return t ? `<span class="tag-key-len" title="${fmt.format(Math.round(metres))} m of open ways">${t}</span>` : "";
 }
 
 function setOverviewLoading() {
@@ -1114,6 +1128,13 @@ $$("th.sortable").forEach(
 
 // Overview tiles read compact (2.3M) by default; clicking a tile flips its numbers to the exact value.
 $("#overview").addEventListener("click", (e) => {
+  const pill = e.target.closest(".ov-len-pill");
+  if (pill) {
+    // Clicking the length pill toggles compact km <-> the full number, without flipping the tile's counts.
+    const full = pill.classList.toggle("full");
+    pill.textContent = full ? pill.dataset.full : pill.dataset.compact;
+    return;
+  }
   const cell = e.target.closest(".ov-cell");
   if (!cell) return;
   const raw = cell.classList.toggle("raw");

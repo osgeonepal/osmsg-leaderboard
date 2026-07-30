@@ -1471,6 +1471,28 @@ main>section {
     line-height: 17px;
 }
 
+.ov-len-pill {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: 7px;
+    white-space: nowrap;
+    color: var(--green-deep);
+    background: var(--green-pale);
+    border-radius: 9999px;
+    padding: 1px 8px;
+    font-weight: 700;
+    font-size: 10px;
+    line-height: 16px;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ov-len-pill:hover {
+    filter: brightness(0.96);
+}
+
 .tag-key-bar {
     display: flex;
     height: 6px;
