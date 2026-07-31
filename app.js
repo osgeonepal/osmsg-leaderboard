@@ -287,6 +287,7 @@ function initCustomRangePicker() {
     minuteIncrement: 5,
     allowInput: false,
     disableMobile: true,
+    showMonths: window.matchMedia?.("(min-width: 700px)").matches ? 2 : 1,
     onChange: (dates) => {
       crClearBtn.hidden = dates.length === 0;
       if (dates.length !== 2) return;
@@ -442,6 +443,7 @@ async function runQuery() {
   state.editorStats = null;
   state.total = 0;
   setOverviewLoading();
+  $("#podium")?.closest("section")?.style.setProperty("display", "");
   $("#podium").innerHTML = "";
   if (typeof setChartsLoading === "function") setChartsLoading();
   const base = windowParams();
@@ -452,6 +454,10 @@ async function runQuery() {
     return p;
   };
   setBusy(true);
+  // Release the controls once the primary content (summary + leaderboard) is up; the secondary
+  // sections keep loading with their own inline status/spinners instead of freezing the UI.
+  let _released = false;
+  const releasePrimary = () => { if (!_released) { _released = true; setBusy(false); } };
   try {
     setStatus("Fetching summary…");
     const summary = await apiGet("summary", param({}), ctrl.signal);
@@ -462,6 +468,7 @@ async function runQuery() {
 
     setStatus("Fetching leaderboard…");
     await loadLeaderboardPage(true);
+    releasePrimary();
     if (!alive()) return;
 
     setStatus("Fetching trending hashtags…");
@@ -482,7 +489,7 @@ async function runQuery() {
   } catch (err) {
     if (err?.name !== "AbortError") console.warn("OSMSG query failed:", err);
   } finally {
-    setBusy(false);
+    releasePrimary();
     setStatus("");
     if (alive()) {
       if (typeof renderHashtagPieChart === "function") renderHashtagPieChart();
@@ -752,6 +759,7 @@ function kmBadge(metres) {
 }
 
 function setOverviewLoading() {
+  $("#overview")?.closest("section")?.style.setProperty("display", "");
   const skel = Array.from({ length: 5 }, () => `<div class="ov-cell"><div class="skeleton" style="height:12px;width:60px"></div><div class="skeleton" style="height:20px;width:90px;margin-top:8px"></div></div>`).join("");
   $("#ov-strip-totals").innerHTML = skel;
   setDetailsOpen(false);
@@ -760,9 +768,9 @@ function setOverviewLoading() {
 }
 
 function showEmptyPrompt() {
-  $("#ov-strip-totals").innerHTML = `<div class="tag-stats-empty" style="grid-column:1/-1">Enter a hashtag and hit Extract.</div>`;
+  $("#overview")?.closest("section")?.style.setProperty("display", "none");
+  $("#podium")?.closest("section")?.style.setProperty("display", "none");
   $("#ov-details").hidden = true;
-  $("#ov-toggle-btn").disabled = true;
   $("#podium").innerHTML = "";
   $("#lb-body").innerHTML = `<tr><td colspan="8"><div class="empty"><i data-lucide="arrow-down-to-line"></i><h3>Extract a hashtag</h3><p>Type one or more hashtags above and press Extract.</p></div></td></tr>`;
   $("#pagination").hidden = true;

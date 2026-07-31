@@ -577,8 +577,11 @@ a:hover {
 
 .custom-range {
     display: none;
+    grid-column: 1 / -1;
     flex-direction: column;
     gap: 6px;
+    max-width: 460px;
+    position: relative;
 }
 
 .custom-range.show {

@@ -70,21 +70,21 @@
           <button type="button" data-range="custom"><i data-lucide="sliders-horizontal" class="ico-sm"></i>
             Custom</button>
         </div>
-        <div id="custom-range" class="custom-range" aria-label="Custom date range">
-          <label for="cr-range">Range (UTC)</label>
-          <div class="cr-input">
-            <i data-lucide="calendar-range" class="ico-sm"></i>
-            <input id="cr-range" type="text" placeholder="Pick a start and end date…" autocomplete="off" readonly />
-            <button type="button" id="cr-clear" class="cr-clear" aria-label="Clear range" hidden><i data-lucide="x"
-                class="ico-sm"></i></button>
-          </div>
-        </div>
       </div>
       <div class="field search-actions">
         <button type="submit" id="search-btn" class="btn-search">
           <i data-lucide="arrow-down-to-line" class="ico-sm"></i> Extract
         </button>
         <div id="extract-status" class="extract-status" aria-live="polite"></div>
+      </div>
+      <div id="custom-range" class="custom-range" aria-label="Custom date range">
+        <label for="cr-range">Range (UTC)</label>
+        <div class="cr-input">
+          <i data-lucide="calendar-range" class="ico-sm"></i>
+          <input id="cr-range" type="text" placeholder="Pick a start and end date…" autocomplete="off" readonly />
+          <button type="button" id="cr-clear" class="cr-clear" aria-label="Clear range" hidden><i data-lucide="x"
+              class="ico-sm"></i></button>
+        </div>
       </div>
     </form>
   </section>
