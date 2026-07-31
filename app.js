@@ -412,22 +412,20 @@ $("#query-form").addEventListener("submit", (e) => {
   runQuery();
 });
 
-// Reference-counted busy state (so nested/sequential loads keep the controls disabled until fully done)
-// and a spinner in the Search button as a working cue.
+// Reference-counted busy state: shows a spinner in the Extract button as a working cue. The controls are
+// deliberately NOT disabled, so a new hashtag/range can be submitted at any time; runQuery aborts the
+// in-flight query and restarts, which is safe.
 let _busyCount = 0;
 function setBusy(busy) {
   _busyCount = Math.max(0, _busyCount + (busy ? 1 : -1));
   const on = _busyCount > 0;
   const btn = $("#search-btn");
   if (btn) {
-    btn.disabled = on;
     btn.innerHTML = on
       ? `<span class="btn-spinner" aria-hidden="true"></span> Extracting…`
       : `<i data-lucide="arrow-down-to-line" class="ico-sm"></i> Extract`;
     if (!on) refreshIcons(btn);
   }
-  if (hashtagInput) hashtagInput.disabled = on;
-  $$(".preset button").forEach((b) => (b.disabled = on));
 }
 
 // Names the section currently loading, shown under the Extract button while the sequential fetches run.
