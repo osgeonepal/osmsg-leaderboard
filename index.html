@@ -53,11 +53,11 @@
             <i data-lucide="info" class="ico-sm"></i>
           </span>
         </label>
-        <div class="field-input">
+        <div class="field-input" id="hashtag-field">
           <i data-lucide="hash" class="ico-md"></i>
+          <div id="chips" class="chips" aria-live="polite"></div>
           <input id="hashtag-input" type="text" placeholder="hotosm, osmnepal, osgeonepal " />
         </div>
-        <div id="chips" class="chips" aria-live="polite"></div>
       </div>
       <div class="field">
         <label><i data-lucide="calendar-range" class="ico-sm"></i> Time range</label>
@@ -72,19 +72,23 @@
         </div>
       </div>
       <div class="field search-actions">
+        <label class="field-spacer" aria-hidden="true">&#160;</label>
         <button type="submit" id="search-btn" class="btn-search">
           <i data-lucide="arrow-down-to-line" class="ico-sm"></i> Extract
         </button>
         <div id="extract-status" class="extract-status" aria-live="polite"></div>
       </div>
       <div id="custom-range" class="custom-range" aria-label="Custom date range">
-        <label for="cr-range">Range (UTC)</label>
-        <div class="cr-input">
-          <i data-lucide="calendar-range" class="ico-sm"></i>
-          <input id="cr-range" type="text" placeholder="Pick a start and end date…" autocomplete="off" readonly />
-          <button type="button" id="cr-clear" class="cr-clear" aria-label="Clear range" hidden><i data-lucide="x"
-              class="ico-sm"></i></button>
+        <div class="cr-head">
+          <div class="cr-head-label">Selected range (UTC)</div>
+          <span class="cr-chip" id="cr-chip">
+            <i data-lucide="calendar-range" class="ico-sm"></i>
+            <span id="cr-chip-text">Pick a start and end date</span>
+          </span>
+          <button type="button" id="cr-clear" class="cr-clear-link" hidden>Clear range</button>
         </div>
+        <input id="cr-range" type="text" class="cr-hidden-input" autocomplete="off" readonly tabindex="-1"
+          aria-hidden="true" />
       </div>
     </form>
   </section>
@@ -196,6 +200,76 @@
     </div>
   </div>
 
+  <div class="modal-backdrop" id="methodology-modal" role="dialog" aria-modal="true"
+    aria-labelledby="methodology-title" hidden>
+    <div class="modal" role="document">
+      <div class="modal-head">
+        <span class="pod-avatar !w-12 !h-12 !mt-0 !text-base" aria-hidden="true"><i data-lucide="calculator"></i></span>
+        <div class="modal-title min-w-0 flex-1">
+          <div class="name" id="methodology-title">How the numbers are calculated</div>
+          <div class="sub">What each stat means and how it is counted</div>
+        </div>
+        <button type="button" class="modal-close" id="methodology-close" aria-label="Close"><i
+            data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body methodology">
+        <section class="mth-sec">
+          <h3><i data-lucide="layers"></i> The core counts</h3>
+          <p>Every edit to a map element (a node, way, or relation) is counted by what it did to that element:</p>
+          <ul>
+            <li><b>Created</b>: a brand-new element (its first version).</li>
+            <li><b>Modified</b>: an existing element that was changed.</li>
+            <li><b>Deleted</b>: an element that was removed.</li>
+          </ul>
+          <p><b>Map changes</b> is the sum of created, modified, and deleted. <b>Changesets</b> counts the edit
+            sessions, and <b>Contributors</b> counts the distinct mappers.</p>
+        </section>
+
+        <section class="mth-sec">
+          <h3><i data-lucide="shapes"></i> Feature breakdowns</h3>
+          <p>Edits are also grouped by what was mapped, using the element's main tag: buildings, highways, waterways,
+            landuse, natural features, amenities, and points of interest. Each shows
+            <span class="mth-tok">+ created</span> and <span class="mth-tok">~ modified</span>.</p>
+        </section>
+
+        <section class="mth-sec">
+          <h3><i data-lucide="ruler"></i> Length (km)</h3>
+          <p>For line features, the length shown is the distance of the ways <b>drawn when they were created</b>,
+            added up. Only open lines are measured. Closed shapes (buildings, areas, and closed loops such as
+            roundabouts) have no length, so they show no km. This is why some line features show km and areas do
+            not.</p>
+        </section>
+
+        <section class="mth-sec">
+          <h3><i data-lucide="hash"></i> Hashtags</h3>
+          <p>Hashtags are matched by prefix, so <code>osmnepal</code> also includes
+            <code>osmnepal-project-123</code> and similar. Add several hashtags to combine them: a changeset that
+            carries any of them is included, and each changeset is counted once even if it uses more than one.</p>
+        </section>
+
+        <section class="mth-sec">
+          <h3><i data-lucide="clock"></i> Time window and freshness</h3>
+          <p>All times are in UTC. Past months come from a published dataset that is complete, and the most recent
+            days come from a live feed that updates every few minutes. The <b>Updated</b> label shows how current the
+            live feed is.</p>
+        </section>
+
+        <section class="mth-sec">
+          <h3><i data-lucide="database"></i> Where the data comes from</h3>
+          <p>The numbers are built from OpenStreetMap's own edit history (replication feeds). Full method and code:</p>
+          <p class="mth-links">
+            <a href="https://github.com/osgeonepal/osmsg" target="_blank" rel="noopener"><i data-lucide="github"></i>
+              Source code</a>
+            <a href="https://github.com/osgeonepal/osmsg/blob/master/docs/Manual.md" target="_blank"
+              rel="noopener"><i data-lucide="book-open"></i> Manual</a>
+            <a href="https://www.openstreetmap.org" target="_blank" rel="noopener"><i data-lucide="map"></i>
+              OpenStreetMap</a>
+          </p>
+        </section>
+      </div>
+    </div>
+  </div>
+
   <footer>
     <div class="footer-inner">
       <div>
@@ -204,6 +278,7 @@
           Funded by <a href="https://osmfoundation.org/" target="_blank" rel="noopener">OSM Foundation</a></div>
       </div>
       <div class="footer-links">
+        <a href="#methodology" id="methodology-link"><i data-lucide="calculator"></i> How stats work</a>
         <a href="https://github.com/osgeonepal/osmsg" target="_blank" rel="noopener"><i data-lucide="github"></i>
           GitHub</a>
         <a id="api-docs-link" href="/docs/swagger" target="_blank" rel="noopener"><i data-lucide="cloud"></i>

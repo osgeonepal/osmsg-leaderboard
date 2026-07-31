@@ -166,13 +166,14 @@ function initials(name) {
 }
 function sumTagKey(ts, k) {
   const n = ts[k];
-  if (!n) return { c: 0, m: 0 };
-  let c = 0, m = 0;
+  if (!n) return { c: 0, m: 0, l: 0 };
+  let c = 0, m = 0, l = 0;
   for (const v in n) {
     c += n[v].c;
     m += n[v].m;
+    l += n[v].len || 0;
   }
-  return { c, m };
+  return { c, m, l };
 }
 
 function transform(row) {
@@ -187,6 +188,7 @@ function transform(row) {
     uid: row.uid,
     username: row.name || `#${row.uid}`,
     hashtags: row.hashtags || [],
+    editors: row.editors || [],
     rank: row.rank,
     changesets: row.changesets,
     map_changes: row.map_changes,
@@ -205,10 +207,12 @@ function transform(row) {
     buildings_modified: b.m,
     highways_created: h.c,
     highways_modified: h.m,
+    highways_len: h.l,
     landuse_created: lu.c,
     landuse_modified: lu.m,
     waterways_created: wt.c,
     waterways_modified: wt.m,
+    waterways_len: wt.l,
     natural_created: nt.c,
     natural_modified: nt.m,
     amenities_created: am.c,
@@ -265,7 +269,25 @@ hashtagInput.addEventListener("keydown", (e) => {
 });
 const customRangePanel = $("#custom-range"),
   crRangeInput = $("#cr-range"),
+  crChipText = $("#cr-chip-text"),
   crClearBtn = $("#cr-clear");
+
+const CR_MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const fmtCrDate = (d) => {
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getUTCDate()} ${CR_MON[d.getUTCMonth()]} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+};
+// Reflect the calendar's current selection in the chip (single source; no duplicate range input).
+function updateCrChip() {
+  const sel = crPicker?.selectedDates || [];
+  if (sel.length === 2) {
+    crChipText.textContent = `${fmtCrDate(utcInputToDate(sel[0]))} → ${fmtCrDate(utcInputToDate(sel[1]))} UTC`;
+    crClearBtn.hidden = false;
+  } else {
+    crChipText.textContent = "Pick a start and end date below";
+    crClearBtn.hidden = true;
+  }
+}
 
 const dateToUtcInput = (d) => {
   const p = (n) => String(n).padStart(2, "0");
@@ -287,10 +309,13 @@ function initCustomRangePicker() {
     minuteIncrement: 5,
     allowInput: false,
     disableMobile: true,
+    inline: true,
     showMonths: window.matchMedia?.("(min-width: 700px)").matches ? 2 : 1,
     onChange: (dates) => {
-      crClearBtn.hidden = dates.length === 0;
-      if (dates.length !== 2) return;
+      if (dates.length !== 2) {
+        updateCrChip();
+        return;
+      }
       const s = utcInputToDate(dates[0]),
         e = utcInputToDate(dates[1]);
       if (s >= e)
@@ -298,6 +323,7 @@ function initCustomRangePicker() {
       state.customStart = s;
       state.customEnd = e;
       state.range = "custom";
+      updateCrChip();
       apply();
     },
   });
@@ -305,7 +331,7 @@ function initCustomRangePicker() {
 crClearBtn?.addEventListener("click", () => {
   crPicker?.clear();
   state.customStart = state.customEnd = null;
-  crClearBtn.hidden = true;
+  updateCrChip();
 });
 
 function setRangePreset(k) {
@@ -320,14 +346,13 @@ function setRangePreset(k) {
       const end = nowUTC(),
         start = new Date(end - 86400000);
       crPicker?.setDate([dateToUtcInput(start), dateToUtcInput(end)], false);
-      crClearBtn.hidden = false;
     } else {
       crPicker?.setDate(
         [dateToUtcInput(state.customStart), dateToUtcInput(state.customEnd)],
         false
       );
-      crClearBtn.hidden = false;
     }
+    updateCrChip();
   }
 }
 $$(".preset button").forEach(
@@ -471,10 +496,14 @@ async function runQuery() {
     releasePrimary();
     if (!alive()) return;
 
-    setStatus("Fetching trending hashtags…");
+    setStatus("Fetching related hashtags…");
     const trending = await apiGet("hashtags", param({ limit: "50" }), ctrl.signal);
     if (!alive()) return;
-    state.hashtagTrends = trending;
+    // Related hashtags = the OTHER tags on the same changesets; drop the exact searched tag(s).
+    const searched = new Set(state.hashtags.map((h) => String(h).replace(/^#/, "").toLowerCase()));
+    state.hashtagTrends = (trending || []).filter(
+      (t) => !searched.has(String(t.hashtag).replace(/^#/, "").toLowerCase())
+    );
     if (typeof renderHashtagPieChart === "function") renderHashtagPieChart();
 
     setStatus("Fetching editors…");
@@ -574,25 +603,6 @@ function toast({ msg, icon = "info", err = false } = {}) {
   toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
 }
 
-async function fetchUserEditor(uid) {
-  const key = String(uid);
-  if (state.userEditors.has(key)) return state.userEditors.get(key);
-
-  try {
-    const { start, end } = rangeWindow(state.range);
-    const url = `https://api.openstreetmap.org/api/0.6/changesets.json?user=${encodeURIComponent(key)}&time=${isoUTC(start)},${isoUTC(end)}&limit=1`;
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) throw new Error();
-    const json = await res.json();
-    const cs = json?.changesets?.[0];
-    const editor = cs?.tags?.created_by || null;
-    state.userEditors.set(key, editor);
-    return editor;
-  } catch {
-    state.userEditors.set(key, null);
-    return null;
-  }
-}
 
 
 function aggregateTagStats(rows) {
@@ -685,7 +695,7 @@ const renderOvCell =
         const showKm = LINEAR_CELLS.has(k) && metres >= 100;
         const kmC = `${compact(metres / 1000)} km`, kmF = `${fmt.format(Math.round(metres / 1000))} km`;
         const pill = showKm
-          ? `<span class="ov-len-pill" data-compact="${kmC}" data-full="${kmF}" title="${escapeHtml(l)} — length of ways created (created features only); click for the full number">${kmC}</span>`
+          ? `<span class="ov-len-pill" data-compact="${kmC}" data-full="${kmF}" title="${escapeHtml(l)}, length of ways created (created features only); click for the full number">${kmC}</span>`
           : "";
         return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}" title="${tip}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
@@ -936,9 +946,14 @@ const cellsHtml = (cells, r) =>
         const [ck, mk] = SPLIT_KEY_MAP[k];
         const c = r[ck] || 0, m = r[mk] || 0;
         const isZero = !c && !m;
+        const metres = LINEAR_CELLS.has(k) ? (r[k + "_len"] || 0) : 0;
+        const kmPill = metres >= 100
+          ? `<span class="ov-len-pill" title="${fmt.format(Math.round(metres / 1000))} km, length of ways created (created features only)">${compact(metres / 1000)} km</span>`
+          : "";
         return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
       <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span></div>
+      ${kmPill}
     </div>`;
       }
       return `<div class="ov-cell${mod ? " " + mod : ""}${r[k] ? "" : " is-zero"}">
@@ -967,23 +982,21 @@ function openUserModal(username) {
   av.dataset.osmUid = String(r.uid);
   applyAvatar(av, r.uid, initials(r.username));
 
-  const userHashtags = (r.hashtags || []).filter(Boolean).map((h) => "#" + String(h).replace(/^#/, ""));
-  const editorCellId = `editor-cell-${r.uid}`;
+  const searchedTags = new Set(state.hashtags.map((h) => String(h).replace(/^#/, "").toLowerCase()));
+  const userHashtags = (r.hashtags || [])
+    .filter(Boolean)
+    .filter((h) => !searchedTags.has(String(h).replace(/^#/, "").toLowerCase()))
+    .map((h) => "#" + String(h).replace(/^#/, ""));
   const hashtagLine = userHashtags.length ? `<div class="modal-hashtags">${userHashtags.map(escapeHtml).join(", ")}</div>` : "";
-  const editorLine = `<div class="modal-editor"><i data-lucide="pen-tool"></i> <span id="${editorCellId}">loading…</span></div>`;
+  const modalEditors = (r.editors || []).filter(Boolean);
+  const editorText = modalEditors.length ? [...new Set(modalEditors.map(shortEditor))].join(", ") : "Unknown";
+  const editorLine = `<div class="modal-editor"><i data-lucide="pen-tool"></i> <span title="${escapeHtml(modalEditors.join(", "))}">${escapeHtml(editorText)}</span></div>`;
 
   const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats([r]), { maxKeys: 24, maxVals: 8 });
   let html = `<div class="modal-meta">${hashtagLine}${editorLine}</div>`;
   html += `<div class="overview-strip">${cellsHtml(USER_TOTAL_CELLS, r)}</div>`;
   html += `<div class="overview-strip" style="margin-top:6px">${elemCellsHtml(r)}</div>`;
 
-  // Fetch editor and patch the line value in place.
-  fetchUserEditor(r.uid).then((editor) => {
-    const valEl = document.getElementById(editorCellId);
-    if (!valEl) return;
-    valEl.textContent = editor ? shortEditor(editor) : "Unknown";
-    if (editor) valEl.title = editor;
-  });
   if (keyCount) {
     html += `
       <div class="ov-toggle" style="margin-top:10px">
@@ -1375,6 +1388,31 @@ userModal.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && userModal.classList.contains("open")) closeUserModal();
 });
+
+// Methodology modal: footer link + shareable #methodology deep link.
+const mthModal = $("#methodology-modal");
+function openMethodology() {
+  if (!mthModal) return;
+  mthModal.hidden = false;
+  mthModal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  refreshIcons(mthModal);
+  $("#methodology-close")?.focus();
+  if (location.hash !== "#methodology") history.replaceState(null, "", "#methodology");
+}
+function closeMethodology() {
+  if (!mthModal) return;
+  mthModal.hidden = true;
+  mthModal.classList.remove("open");
+  document.body.style.overflow = "";
+  if (location.hash === "#methodology") history.replaceState(null, "", location.pathname + location.search);
+}
+$("#methodology-link")?.addEventListener("click", (e) => { e.preventDefault(); openMethodology(); });
+$("#methodology-close")?.addEventListener("click", closeMethodology);
+mthModal?.addEventListener("click", (e) => { if (e.target === mthModal) closeMethodology(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && mthModal?.classList.contains("open")) closeMethodology(); });
+window.addEventListener("hashchange", () => { if (location.hash === "#methodology") openMethodology(); });
+if (location.hash === "#methodology") openMethodology();
 
 function boot() {
   const swaggerURL = `${API_BASE}/docs/swagger`;

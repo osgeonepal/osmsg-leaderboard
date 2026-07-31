@@ -134,7 +134,7 @@ function _ensureChartsSection() {
             <line x1="10" y1="3" x2="8" y2="21"/>
             <line x1="16" y1="3" x2="14" y2="21"/>
           </svg>
-          Trending hashtags
+          Related hashtags
         </div>
         <div class="osmsg-hashtag-stat-row">
           <span id="hashtag-stat-total"></span>
