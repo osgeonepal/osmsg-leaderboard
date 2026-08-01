@@ -285,6 +285,11 @@
   </footer>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="export-progress" class="export-progress" role="status" aria-live="polite" hidden>
+    <div class="ep-label"><i data-lucide="download" class="ico-sm"></i> Building CSV…</div>
+    <div class="ep-bar"><div class="ep-fill" id="export-progress-fill"></div></div>
+    <div class="ep-count" id="export-progress-count"></div>
+  </div>
   <script src="app.js" defer></script>
   <script src="charts.js" defer></script>
 </body>

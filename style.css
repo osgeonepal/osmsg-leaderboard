@@ -967,6 +967,17 @@ span.flatpickr-weekday {
     color: #fff;
 }
 
+/* Consistent square-ish selection: flatpickr rounds a single-day range to a 50px circle; match the 6px
+   day radius (selectors specific enough to beat flatpickr's .selected.startRange.endRange). */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.startRange,
+.flatpickr-day.selected.endRange,
+.flatpickr-day.selected.startRange.endRange {
+    border-radius: 6px;
+}
+
 .flatpickr-day.startRange.startRange+.endRange:not(:nth-child(7n+1)),
 .flatpickr-day.endRange.endRange+.startRange:not(:nth-child(7n+1)) {
     box-shadow: -10px 0 0 var(--green);
@@ -1763,8 +1774,7 @@ button.ht-tag-add:hover {
 
 .ov-len-pill {
     display: inline-block;
-    align-self: flex-start;
-    margin-top: 7px;
+    align-self: center;
     white-space: nowrap;
     color: var(--green-deep);
     background: var(--green-pale);
@@ -2695,6 +2705,55 @@ button.ht-tag-add:hover {
 }
 
 /* toast */
+.export-progress {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 260px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--bd);
+    border-radius: 12px;
+    box-shadow: var(--shadow-pop);
+    z-index: 60;
+}
+
+.export-progress[hidden] {
+    display: none;
+}
+
+.export-progress .ep-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 8px;
+}
+
+.export-progress .ep-bar {
+    height: 6px;
+    background: var(--surface-alt);
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.export-progress .ep-fill {
+    height: 100%;
+    width: 0;
+    background: var(--green);
+    border-radius: 9999px;
+    transition: width 0.2s ease;
+}
+
+.export-progress .ep-count {
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
 .toast {
     position: fixed;
     bottom: 20px;

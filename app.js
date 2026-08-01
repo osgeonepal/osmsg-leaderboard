@@ -790,8 +790,7 @@ const renderOvCell =
           : "";
         return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}" title="${tip}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
-      <div class="val"><span class="c" title="created">+${numHtml(c)}</span><span class="m" title="modified">~${numHtml(m)}</span></div>
-      ${pill}
+      <div class="val"><span class="c" title="created">+${numHtml(c)}</span><span class="m" title="modified">~${numHtml(m)}</span>${pill}</div>
     </div>`;
       }
       if (mod === "elem") {
@@ -1060,8 +1059,7 @@ const cellsHtml = (cells, r) =>
           : "";
         return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
-      <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span></div>
-      ${kmPill}
+      <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span>${kmPill}</div>
     </div>`;
       }
       return `<div class="ov-cell${mod ? " " + mod : ""}${r[k] ? "" : " is-zero"}">
@@ -1272,43 +1270,97 @@ $("#overview").addEventListener("click", (e) => {
   cell.querySelectorAll(".num").forEach((s) => { s.textContent = raw ? s.dataset.full : s.dataset.compact; });
 });
 
-$("#export-btn").addEventListener("click", () => {
-  const exportRows = state.batch.length ? state.batch : state.rows;
-  if (!exportRows.length)
-    return toast({ msg: "Nothing to export", icon: "alert-triangle", err: true });
-  const cols = [
-    "rank", "uid", "username", "map_changes", "created", "modified", "deleted", "changesets",
-    "nodes_created", "nodes_modified", "nodes_deleted",
-    "ways_created", "ways_modified", "ways_deleted",
-    "rels_created", "rels_modified", "rels_deleted",
-    "pois_created", "pois_modified",
-    "buildings_created", "buildings_modified",
-    "highways_created", "highways_modified", "highways_km",
-    "landuse_created", "landuse_modified",
-    "waterways_created", "waterways_modified", "waterways_km",
-    "natural_created", "natural_modified",
-    "amenities_created", "amenities_modified",
-  ];
+const EXPORT_COLS = [
+  "rank", "uid", "username", "map_changes", "created", "modified", "deleted", "changesets",
+  "nodes_created", "nodes_modified", "nodes_deleted",
+  "ways_created", "ways_modified", "ways_deleted",
+  "rels_created", "rels_modified", "rels_deleted",
+  "pois_created", "pois_modified",
+  "buildings_created", "buildings_modified",
+  "highways_created", "highways_modified", "highways_km",
+  "landuse_created", "landuse_modified",
+  "waterways_created", "waterways_modified", "waterways_km",
+  "natural_created", "natural_modified",
+  "amenities_created", "amenities_modified",
+];
+
+function buildCsv(rows) {
   const km = (metres) => Math.round((metres || 0) / 100) / 10;
-  const sorted = exportRows.slice().sort((a, b) => b.map_changes - a.map_changes);
-  const lines = [cols.join(",")];
+  const sorted = rows.slice().sort((a, b) => b.map_changes - a.map_changes);
+  const lines = [EXPORT_COLS.join(",")];
   sorted.forEach((r, i) => {
     const row = { ...r, rank: i + 1, highways_km: km(r.highways_len), waterways_km: km(r.waterways_len) };
-    lines.push(cols.map((c) => {
+    lines.push(EXPORT_COLS.map((c) => {
       const v = row[c];
       const s = v === undefined || v === null ? "" : String(v);
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     }).join(","));
   });
-  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  const tag = state.hashtags.length ? state.hashtags.join("-") : "all";
-  a.href = url;
-  a.download = `osmsg-leaderboard-${tag}-${state.range}-${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast({ msg: "CSV downloaded", icon: "download" });
+  return lines.join("\n");
+}
+
+// The leaderboard is server-paginated (100/page max), so export pages through every contributor rather
+// than only the rows currently on screen, reporting progress as each page lands.
+async function fetchAllLeaderboardRows(onProgress, signal) {
+  const SIZE = 100;
+  const params = (page) => {
+    const p = windowParams();
+    p.set("page", String(page));
+    p.set("page_size", String(SIZE));
+    p.set("sort", SERVER_SORT[state.sort.key] || "map_changes");
+    p.set("order", state.sort.dir);
+    if (state.search.trim()) p.set("q", state.search.trim());
+    return p;
+  };
+  const first = await apiGet("leaderboard", params(1), signal);
+  const totalPages = Math.max(1, Math.ceil((first.total || 0) / SIZE));
+  let rows = (first.items || []).map(transform);
+  onProgress(1, totalPages);
+  for (let page = 2; page <= totalPages; page++) {
+    const env = await apiGet("leaderboard", params(page), signal);
+    rows = rows.concat((env.items || []).map(transform));
+    onProgress(page, totalPages);
+  }
+  return rows;
+}
+
+function setExportProgress(done, total) {
+  const box = $("#export-progress");
+  if (!box) return;
+  box.hidden = false;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  $("#export-progress-fill").style.width = `${pct}%`;
+  $("#export-progress-count").textContent = `${done} / ${total} pages`;
+}
+
+let _exporting = false;
+$("#export-btn").addEventListener("click", async () => {
+  if (_exporting) return;
+  if (!state.hashtags.length || !state.total)
+    return toast({ msg: "Nothing to export", icon: "alert-triangle", err: true });
+  _exporting = true;
+  const btn = $("#export-btn");
+  btn.disabled = true;
+  const ctrl = new AbortController();
+  setExportProgress(0, Math.max(1, Math.ceil(state.total / 100)));
+  try {
+    const rows = await fetchAllLeaderboardRows(setExportProgress, ctrl.signal);
+    const tag = state.hashtags.length ? state.hashtags.join("-") : "all";
+    const blob = new Blob([buildCsv(rows)], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `osmsg-leaderboard-${tag}-${state.range}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ msg: `CSV downloaded (${rows.length} contributors)`, icon: "download" });
+  } catch (err) {
+    toast({ msg: `Export failed: ${err.message}`, icon: "alert-triangle", err: true });
+  } finally {
+    _exporting = false;
+    btn.disabled = false;
+    $("#export-progress").hidden = true;
+  }
 });
 
 function showLoading() {
