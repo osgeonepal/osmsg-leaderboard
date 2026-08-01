@@ -1030,9 +1030,9 @@ const elemCellsHtml = (r) =>
     return `<div class="ov-cell ov-elem${isZero ? " is-zero" : ""}">
     <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
     <div class="val">
-      <span class="c" title="created">+${fmt.format(c)}</span>
-      <span class="m" title="modified">~${fmt.format(m)}</span>
-      <span class="d" title="deleted">−${fmt.format(d)}</span>
+      <span class="c" title="created">+${numHtml(c)}</span>
+      <span class="m" title="modified">~${numHtml(m)}</span>
+      <span class="d" title="deleted">−${numHtml(d)}</span>
     </div>
   </div>`;
   }).join("");
@@ -1054,17 +1054,18 @@ const cellsHtml = (cells, r) =>
         const c = r[ck] || 0, m = r[mk] || 0;
         const isZero = !c && !m;
         const metres = LINEAR_CELLS.has(k) ? (r[k + "_len"] || 0) : 0;
+        const kmC = `${compact(metres / 1000)} km`, kmF = `${fmt.format(Math.round(metres / 1000))} km`;
         const kmPill = metres >= 100
-          ? `<span class="ov-len-pill" title="${fmt.format(Math.round(metres / 1000))} km, length of ways created (created features only)">${compact(metres / 1000)} km</span>`
+          ? `<span class="ov-len-pill" data-compact="${kmC}" data-full="${kmF}" title="${kmF}, length of ways created (created features only); click for the full number">${kmC}</span>`
           : "";
         return `<div class="ov-cell ov-split${isZero ? " is-zero" : ""}">
       <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
-      <div class="val"><span class="c">+${fmt.format(c)}</span><span class="m">~${fmt.format(m)}</span>${kmPill}</div>
+      <div class="val"><span class="c">+${numHtml(c)}</span><span class="m">~${numHtml(m)}</span>${kmPill}</div>
     </div>`;
       }
       return `<div class="ov-cell${mod ? " " + mod : ""}${r[k] ? "" : " is-zero"}">
     <div class="lbl"><i data-lucide="${ic}"></i>${l}</div>
-    <div class="val">${fmt.format(r[k] || 0)}</div>
+    <div class="val">${numHtml(r[k] || 0)}</div>
   </div>`;
     })
     .join("");
@@ -1260,6 +1261,20 @@ $("#overview").addEventListener("click", (e) => {
   const pill = e.target.closest(".ov-len-pill");
   if (pill) {
     // Clicking the length pill toggles compact km <-> the full number, without flipping the tile's counts.
+    const full = pill.classList.toggle("full");
+    pill.textContent = full ? pill.dataset.full : pill.dataset.compact;
+    return;
+  }
+  const cell = e.target.closest(".ov-cell");
+  if (!cell) return;
+  const raw = cell.classList.toggle("raw");
+  cell.querySelectorAll(".num").forEach((s) => { s.textContent = raw ? s.dataset.full : s.dataset.compact; });
+});
+
+// Same compact <-> exact toggle inside the profile modal, so the tiles behave like the main page.
+$("#user-modal-body").addEventListener("click", (e) => {
+  const pill = e.target.closest(".ov-len-pill");
+  if (pill) {
     const full = pill.classList.toggle("full");
     pill.textContent = full ? pill.dataset.full : pill.dataset.compact;
     return;
