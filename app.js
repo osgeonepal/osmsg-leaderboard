@@ -255,11 +255,20 @@ function addHashtag(raw) {
 // with one click instead of retyping. Newest first, deduped by hashtag set + range, capped at RECENT_MAX.
 const RECENT_KEY = "osmsg.recent.v1",
   RECENT_MAX = 5;
-const recentKey = (e) => e.hashtags.join(",") + "|" + e.range + "|" + (e.start || "") + (e.end || "");
+// Unique by the hashtag set alone (not the range), so the same hashtags searched over different ranges
+// collapse to one recent entry keeping the latest range.
+const recentKey = (e) => e.hashtags.join(",");
 function loadRecent() {
   try {
     const v = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
-    return Array.isArray(v) ? v.filter((e) => e && Array.isArray(e.hashtags) && e.hashtags.length) : [];
+    const arr = Array.isArray(v) ? v.filter((e) => e && Array.isArray(e.hashtags) && e.hashtags.length) : [];
+    const seen = new Set();
+    return arr.filter((e) => {
+      const k = recentKey(e);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
   } catch (err) {
     console.info("Recent searches unavailable:", err.message);
     return [];
@@ -290,8 +299,8 @@ function applyRecentSearch(entry) {
   }
   setRangePreset(entry.range);
   renderChips();
+  // Only load the search into the form; the user presses Extract to run it (no auto-fire).
   apply();
-  runQuery();
 }
 function renderRecentSearches() {
   const box = $("#recent-searches");
@@ -1274,14 +1283,20 @@ $("#export-btn").addEventListener("click", () => {
     "rels_created", "rels_modified", "rels_deleted",
     "pois_created", "pois_modified",
     "buildings_created", "buildings_modified",
-    "highways_created", "highways_modified",
+    "highways_created", "highways_modified", "highways_km",
+    "landuse_created", "landuse_modified",
+    "waterways_created", "waterways_modified", "waterways_km",
+    "natural_created", "natural_modified",
+    "amenities_created", "amenities_modified",
   ];
+  const km = (metres) => Math.round((metres || 0) / 100) / 10;
   const sorted = exportRows.slice().sort((a, b) => b.map_changes - a.map_changes);
   const lines = [cols.join(",")];
   sorted.forEach((r, i) => {
-    const row = { ...r, rank: i + 1 };
+    const row = { ...r, rank: i + 1, highways_km: km(r.highways_len), waterways_km: km(r.waterways_len) };
     lines.push(cols.map((c) => {
-      const s = String(row[c]);
+      const v = row[c];
+      const s = v === undefined || v === null ? "" : String(v);
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     }).join(","));
   });
@@ -1404,11 +1419,8 @@ function renderWindowBar() {
   const useDate = state.range === "all" || end - start > 60 * 86400 * 1000;
   const f = useDate ? dtfDate : dtfShort;
   $("#wb-window-text").textContent = `${f.format(start)} → ${f.format(end)}`;
-  const isCustom = state.range === "custom" && state.customStart && state.customEnd;
-  $("#wb-window").classList.toggle("clickable", !!isCustom);
-  $("#wb-window").title = isCustom
-    ? "Click to edit the custom range"
-    : `Time window\nUTC: ${start.toISOString()} → ${end.toISOString()}\nLocal (${TZ}): ${dtfFull.format(start)} → ${dtfFull.format(end)}`;
+  $("#wb-window").classList.add("clickable");
+  $("#wb-window").title = `Click to edit this time range\nUTC: ${start.toISOString()} → ${end.toISOString()}`;
   $("#wb-localtime").textContent = dtfClock.format(new Date());
   $("#wb-tzname").textContent = `${TZ} · ${tzOffsetLabel()}`;
 }
@@ -1485,12 +1497,17 @@ $("#last-updated")?.addEventListener("keydown", (e) => {
   }
 });
 
-// The window bar shows the active custom range; clicking it reopens the picker to edit that range.
+// Clicking the window pill converts the active window (any preset) into an editable custom range and
+// opens the same date picker the Custom button uses.
 $("#wb-window")?.addEventListener("click", () => {
-  if (state.range === "custom" && state.customStart && state.customEnd) {
-    setRangePreset("custom");
-    customRangePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
+  const { start, end } =
+    state.windowStart && state.windowEnd
+      ? { start: state.windowStart, end: state.windowEnd }
+      : rangeWindow(state.range);
+  state.customStart = start;
+  state.customEnd = end;
+  setRangePreset("custom");
+  customRangePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
 
 const userModal = $("#user-modal");

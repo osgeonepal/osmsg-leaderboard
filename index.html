@@ -100,21 +100,18 @@
     <div class="wb-item" id="last-updated" aria-live="polite" role="button" tabindex="0"
         title="Click to refresh" style="cursor:pointer"><i data-lucide="refresh-cw" class="ico-sm"></i><span
         class="k">Updated</span><span class="v" id="last-updated-text">never</span></div>
-    <a class="wb-item" id="api-link" href="/docs/swagger" target="_blank" rel="noopener"
-        title="Open API docs (Swagger)" style="text-decoration:none"><i data-lucide="cloud" class="ico-sm"></i><span
-        class="k">API</span><span class="v" id="api-host">…</span></a>
+    <div class="wb-right">
+      <span class="ov-breakdown-meta" id="ov-breakdown-meta"></span>
+      <button type="button" class="ov-toggle-btn" id="ov-toggle-btn" aria-expanded="false"
+        aria-controls="ov-details">
+        <span id="ov-toggle-label">Show details</span><span class="ov-caret" aria-hidden="true">▾</span>
+      </button>
+    </div>
   </div>
   <main role="main">
     <section aria-label="Overview">
       <div id="overview">
         <div class="overview-strip" id="ov-strip-totals"></div>
-        <div class="ov-toggle">
-          <span class="ov-breakdown-meta" id="ov-breakdown-meta"></span>
-          <button type="button" class="ov-toggle-btn" id="ov-toggle-btn" aria-expanded="false"
-            aria-controls="ov-details">
-            <span id="ov-toggle-label">Show details</span><span class="ov-caret" aria-hidden="true">▾</span>
-          </button>
-        </div>
         <div id="ov-details" hidden>
           <div class="overview-strip" id="ov-strip"></div>
           <div class="ov-breakdown" id="ov-breakdown"></div>
