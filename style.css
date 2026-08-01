@@ -551,7 +551,6 @@ a:hover {
     flex-wrap: nowrap;
     align-items: center;
     gap: 6px;
-    margin-top: -12px;
     overflow-x: auto;
     scrollbar-width: thin;
 }
@@ -566,12 +565,6 @@ a:hover {
 
 .rs-chip {
     flex: 0 0 auto;
-}
-
-@media (max-width: 859px) {
-    .recent-searches {
-        margin-top: -2px;
-    }
 }
 
 .wb-item.clickable {
@@ -2268,6 +2261,12 @@ button.ht-tag-add:hover {
     background: rgba(242, 247, 243, 0.6);
 }
 
+/* Numeric headers align right to match their right-aligned values (the base th rule left-aligns them). */
+.lb thead th.col-num,
+.lb thead th.text-right {
+    text-align: right;
+}
+
 .lb th.sortable {
     cursor: pointer;
     user-select: none;
@@ -2612,7 +2611,7 @@ button.ht-tag-add:hover {
 
 /* methodology modal */
 #methodology-modal .modal {
-    max-width: 620px;
+    max-width: 760px;
 }
 
 .mth-head {
