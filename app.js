@@ -326,10 +326,7 @@ function renderRecentSearches() {
 // A related-hashtag click adds that tag to the current query and re-runs, so the user can drill into the
 // combined set without retyping.
 function addRelatedHashtag(tag) {
-  if (addHashtag(tag)) {
-    apply();
-    runQuery();
-  }
+  if (addHashtag(tag)) apply();
 }
 hashtagInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === ",") {
