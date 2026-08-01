@@ -16,8 +16,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..900&family=Plus+Jakarta+Sans:wght@300..800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="tailwind.config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js" defer></script>
@@ -58,7 +58,6 @@
           <div id="chips" class="chips" aria-live="polite"></div>
           <input id="hashtag-input" type="text" placeholder="hotosm, osmnepal, osgeonepal " />
         </div>
-        <div id="recent-searches" class="recent-searches" aria-label="Recent searches" hidden></div>
       </div>
       <div class="field">
         <label><i data-lucide="calendar-range" class="ico-sm"></i> Time range</label>
@@ -79,6 +78,7 @@
         </button>
         <div id="extract-status" class="extract-status" aria-live="polite"></div>
       </div>
+      <div id="recent-searches" class="recent-searches" aria-label="Recent searches" hidden></div>
       <div id="custom-range" class="custom-range" aria-label="Custom date range">
         <div class="cr-head">
           <div class="cr-head-label">Selected range (UTC)</div>
@@ -202,14 +202,9 @@
   </div>
 
   <div class="modal-backdrop" id="methodology-modal" role="dialog" aria-modal="true"
-    aria-labelledby="methodology-title" hidden>
+    aria-label="How the numbers are calculated" hidden>
     <div class="modal" role="document">
-      <div class="modal-head">
-        <span class="pod-avatar !w-12 !h-12 !mt-0 !text-base" aria-hidden="true"><i data-lucide="calculator"></i></span>
-        <div class="modal-title min-w-0 flex-1">
-          <div class="name" id="methodology-title">How the numbers are calculated</div>
-          <div class="sub">What each stat means and how it is counted</div>
-        </div>
+      <div class="modal-head mth-head">
         <button type="button" class="modal-close" id="methodology-close" aria-label="Close"><i
             data-lucide="x"></i></button>
       </div>
@@ -218,12 +213,12 @@
           <h3><i data-lucide="layers"></i> The core counts</h3>
           <p>Every edit to a map element (a node, way, or relation) is counted by what it did to that element:</p>
           <ul>
-            <li><b>Created</b>: a brand-new element (its first version).</li>
-            <li><b>Modified</b>: an existing element that was changed.</li>
-            <li><b>Deleted</b>: an element that was removed.</li>
+            <li>Created: a brand-new element (its first version).</li>
+            <li>Modified: an existing element that was changed.</li>
+            <li>Deleted: an element that was removed.</li>
           </ul>
-          <p><b>Map changes</b> is the sum of created, modified, and deleted. <b>Changesets</b> counts the edit
-            sessions, and <b>Contributors</b> counts the distinct mappers.</p>
+          <p>Map changes is the sum of created, modified, and deleted. Changesets counts the edit
+            sessions, and Contributors counts the distinct mappers.</p>
         </section>
 
         <section class="mth-sec">
@@ -235,7 +230,7 @@
 
         <section class="mth-sec">
           <h3><i data-lucide="ruler"></i> Length (km)</h3>
-          <p>For line features, the length shown is the distance of the ways <b>drawn when they were created</b>,
+          <p>For line features, the length shown is the distance of the ways drawn when they were created,
             added up. Only open lines are measured. Closed shapes (buildings, areas, and closed loops such as
             roundabouts) have no length, so they show no km. This is why some line features show km and areas do
             not.</p>
@@ -251,7 +246,7 @@
         <section class="mth-sec">
           <h3><i data-lucide="clock"></i> Time window and freshness</h3>
           <p>All times are in UTC. Past months come from a published dataset that is complete, and the most recent
-            days come from a live feed that updates every few minutes. The <b>Updated</b> label shows how current the
+            days come from a live feed that updates every few minutes. The Updated label shows how current the
             live feed is.</p>
         </section>
 

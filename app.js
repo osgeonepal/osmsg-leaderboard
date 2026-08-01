@@ -430,11 +430,19 @@ function setRangePreset(k) {
 $$(".preset button").forEach(
   (b) =>
   (b.onclick = () => {
-    setRangePreset(b.dataset.range);
-    if (b.dataset.range !== "custom") {
-      state.customStart = state.customEnd = null;
-      apply();
+    const k = b.dataset.range;
+    if (k === "custom") {
+      // Custom toggles the picker: open it if closed, close it (keeping the recorded range) if open.
+      if (state.range === "custom" && customRangePanel.classList.contains("show")) {
+        customRangePanel.classList.remove("show");
+      } else {
+        setRangePreset("custom");
+      }
+      return;
     }
+    setRangePreset(k);
+    state.customStart = state.customEnd = null;
+    apply();
   })
 );
 
@@ -481,6 +489,9 @@ $("#query-form").addEventListener("submit", (e) => {
     addHashtag(hashtagInput.value);
     hashtagInput.value = "";
   }
+  // The picker only records the custom range; once extracted, hide it (the window bar shows the range,
+  // click it to reopen).
+  customRangePanel.classList.remove("show");
   runQuery();
 });
 
@@ -1393,7 +1404,11 @@ function renderWindowBar() {
   const useDate = state.range === "all" || end - start > 60 * 86400 * 1000;
   const f = useDate ? dtfDate : dtfShort;
   $("#wb-window-text").textContent = `${f.format(start)} → ${f.format(end)}`;
-  $("#wb-window").title = `Time window\nUTC: ${start.toISOString()} → ${end.toISOString()}\nLocal (${TZ}): ${dtfFull.format(start)} → ${dtfFull.format(end)}`;
+  const isCustom = state.range === "custom" && state.customStart && state.customEnd;
+  $("#wb-window").classList.toggle("clickable", !!isCustom);
+  $("#wb-window").title = isCustom
+    ? "Click to edit the custom range"
+    : `Time window\nUTC: ${start.toISOString()} → ${end.toISOString()}\nLocal (${TZ}): ${dtfFull.format(start)} → ${dtfFull.format(end)}`;
   $("#wb-localtime").textContent = dtfClock.format(new Date());
   $("#wb-tzname").textContent = `${TZ} · ${tzOffsetLabel()}`;
 }
@@ -1467,6 +1482,14 @@ $("#last-updated")?.addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === " ") {
     e.preventDefault();
     refreshStats();
+  }
+});
+
+// The window bar shows the active custom range; clicking it reopens the picker to edit that range.
+$("#wb-window")?.addEventListener("click", () => {
+  if (state.range === "custom" && state.customStart && state.customEnd) {
+    setRangePreset("custom");
+    customRangePanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 });
 
