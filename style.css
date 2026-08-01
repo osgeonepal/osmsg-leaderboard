@@ -2317,29 +2317,6 @@ button.ht-tag-add:hover {
     font-size: 12px;
 }
 
-.col-rank .top {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 600;
-    color: #fff;
-}
-
-.col-rank.r1 .top {
-    background: var(--gold);
-}
-
-.col-rank.r2 .top {
-    background: var(--silver);
-}
-
-.col-rank.r3 .top {
-    background: var(--bronze);
-}
 
 .col-user {
     min-width: 180px;

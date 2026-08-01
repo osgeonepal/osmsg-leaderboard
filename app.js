@@ -1084,10 +1084,8 @@ function openUserModal(username) {
   av.dataset.osmUid = String(r.uid);
   applyAvatar(av, r.uid, initials(r.username));
 
-  const searchedTags = new Set(state.hashtags.map((h) => String(h).replace(/^#/, "").toLowerCase()));
   const userHashtags = (r.hashtags || [])
     .filter(Boolean)
-    .filter((h) => !searchedTags.has(String(h).replace(/^#/, "").toLowerCase()))
     .map((h) => "#" + String(h).replace(/^#/, ""));
   const hashtagLine = userHashtags.length
     ? `<div class="modal-hashtags">${userHashtags.map((h) => `<span class="mh-chip">${escapeHtml(h)}</span>`).join("")}</div>`
@@ -1160,11 +1158,11 @@ function renderTable() {
   });
   tb.innerHTML = state.rows
     .map((r) => {
-      const rank = r.rank, rc = rank <= 3 ? `r${rank}` : "";
+      const rank = r.rank;
       const t = Math.max(1, r.map_changes);
       const cP = (r.created / t) * 100, mP = (r.modified / t) * 100, dP = (r.deleted / t) * 100;
       return `<tr data-user="${escapeHtml(r.username)}" class="lb-row" tabindex="0" role="button" aria-label="View ${escapeHtml(r.username)} contributions">
-      <td class="col-rank ${rc}">${rank <= 3 ? `<span class="top">${rank}</span>` : rank}</td>
+      <td class="col-rank">${rank}</td>
       <td class="col-user"><div class="user-cell">
         <span class="avatar" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>
         <a class="username" href="https://www.openstreetmap.org/user/${encodeURIComponent(r.username)}" target="_blank" rel="noopener" title="${escapeHtml(r.username)}" onclick="event.stopPropagation()">${escapeHtml(r.username)}</a><i data-lucide="external-link" class="ext-link"></i>
