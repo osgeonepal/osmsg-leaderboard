@@ -153,6 +153,10 @@ function _ensureChartsSection() {
 
 const _PER_PAGE = 5;
 let _edPage = 0, _edLen = -1, _edMetric = "users"; // "users" (primary) | "edits"
+const _edExpanded = new Set(); // editor families expanded to show their versions
+// Editor family for grouping: a known family (iD, JOSM, ...) or the token before the first "/" or space.
+const editorGroup = (s) =>
+  (typeof editorFamily === "function" && editorFamily(s)) || String(s || "Unknown").split(/[/\s]/)[0] || "Unknown";
 let _htPage = 0, _htLen = -1, _htMetric = "users"; // "users" (primary) | "edits"
 
 // A small skeleton shown in both chart cards while their data loads (same idea as the table skeleton).
@@ -209,7 +213,17 @@ function renderEditorBarChart() {
 
   const byUsers = _edMetric === "users";
   const valueOf = (r) => (byUsers ? (r.users || 0) : (r.changes || 0));
-  const all = src.slice().sort((a, b) => valueOf(b) - valueOf(a));
+
+  // Group editor versions by family so the default view is compact; a family expands to its versions.
+  const groups = new Map();
+  for (const e of src) {
+    const g = editorGroup(e.editor);
+    let gr = groups.get(g);
+    if (!gr) { gr = { editor: g, changes: 0, users: 0, changesets: 0, versions: [] }; groups.set(g, gr); }
+    gr.changes += e.changes || 0; gr.users += e.users || 0; gr.changesets += e.changesets || 0;
+    gr.versions.push(e);
+  }
+  const all = [...groups.values()].sort((a, b) => valueOf(b) - valueOf(a));
   if (all.length !== _edLen) { _edPage = 0; _edLen = all.length; }
 
   const fmtVal = byUsers ? ((n) => fmt.format(n)) : ((typeof compact === "function") ? compact : fmt.format);
@@ -223,15 +237,40 @@ function renderEditorBarChart() {
   legendEl.querySelectorAll(".mm-btn").forEach((b) => {
     b.onclick = () => { _edMetric = b.dataset.metric; _edPage = 0; renderEditorBarChart(); };
   });
-  const rowFn = (r, max) => `
-    <div class="ht-row">
-      <div class="ht-head">
-        <span class="ht-tag" title="${escapeHtml(r.editor)} · ${fmt.format(r.users)} contributors · ${fmt.format(r.changes)} map changes">${escapeHtml(r.editor)}</span>
-        <span class="ht-val">${fmtVal(valueOf(r))}</span>
-      </div>
-      <div class="ht-bar"><div class="ht-fill" style="width:${Math.max(3, (valueOf(r) / max) * 100)}%"></div></div>
+
+  const subRow = (v, max) => `
+    <div class="ht-row ht-sub">
+      <div class="ht-head"><span class="ht-tag" title="${escapeHtml(v.editor)}">${escapeHtml(v.editor)}</span><span class="ht-val">${fmtVal(valueOf(v))}</span></div>
+      <div class="ht-bar"><div class="ht-fill" style="width:${Math.max(3, (valueOf(v) / max) * 100)}%"></div></div>
     </div>`;
+  const rowFn = (r, max) => {
+    const expandable = r.versions.length > 1;
+    const open = _edExpanded.has(r.editor);
+    const subs = expandable && open
+      ? r.versions.slice().sort((a, b) => valueOf(b) - valueOf(a)).map((v) => subRow(v, max)).join("")
+      : "";
+    const caret = expandable ? `<span class="ht-caret">${open ? "▾" : "▸"}</span>` : "";
+    const count = expandable ? `<span class="ht-count">${r.versions.length}</span>` : "";
+    return `
+      <div class="ht-row${expandable ? " ht-expandable" : ""}"${expandable ? ` data-egroup="${escapeHtml(r.editor)}"` : ""}>
+        <div class="ht-head">
+          <span class="ht-tag" title="${escapeHtml(r.editor)} · ${fmt.format(r.users)} contributors · ${fmt.format(r.changes)} map changes">${caret}${escapeHtml(r.editor)}${count}</span>
+          <span class="ht-val">${fmtVal(valueOf(r))}</span>
+        </div>
+        <div class="ht-bar"><div class="ht-fill" style="width:${Math.max(3, (valueOf(r) / max) * 100)}%"></div></div>
+      </div>${subs}`;
+  };
   _edPage = _pagedList(wrap, all, _edPage, rowFn, gmax, (np) => { _edPage = np; renderEditorBarChart(); });
+  wrap.querySelectorAll(".ht-expandable").forEach((el) => {
+    const head = el.querySelector(".ht-head");
+    if (!head) return;
+    head.style.cursor = "pointer";
+    head.onclick = () => {
+      const g = el.dataset.egroup;
+      if (_edExpanded.has(g)) _edExpanded.delete(g); else _edExpanded.add(g);
+      renderEditorBarChart();
+    };
+  });
 }
 
 function renderHashtagPieChart() {
@@ -269,10 +308,17 @@ function renderHashtagPieChart() {
   const rowFn = (e, max) => `
     <div class="ht-row">
       <div class="ht-head">
-        <span class="ht-tag" title="${e.tag} · ${fmt.format(e.users)} contributors · ${fmt.format(e.edits)} map changes">${e.tag}</span>
+        <button type="button" class="ht-tag ht-tag-add" data-addtag="${escapeHtml(String(e.tag).replace(/^#/, ""))}"
+          title="Add ${e.tag} to the search">${e.tag}</button>
         <span class="ht-val">${fmtVal(valueOf(e))}</span>
       </div>
       <div class="ht-bar"><div class="ht-fill" style="width:${Math.max(3, (valueOf(e) / max) * 100)}%"></div></div>
     </div>`;
   _htPage = _pagedList(wrapEl, trends, _htPage, rowFn, gmax, (np) => { _htPage = np; renderHashtagPieChart(); });
+  // Clicking a related hashtag adds it to the query (handler lives in app.js). Delegated + idempotent so
+  // it survives paging re-renders.
+  wrapEl.onclick = (ev) => {
+    const el = ev.target.closest("[data-addtag]");
+    if (el && typeof addRelatedHashtag === "function") addRelatedHashtag(el.dataset.addtag);
+  };
 }

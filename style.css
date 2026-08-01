@@ -545,6 +545,47 @@ a:hover {
     height: 12px;
 }
 
+.recent-searches {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.recent-searches[hidden] {
+    display: none;
+}
+
+.rs-label {
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.rs-chip {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    background: var(--surface-alt);
+    border: 1px solid var(--bd);
+    border-radius: 9999px;
+    padding: 2px 9px;
+    cursor: pointer;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rs-chip:hover {
+    color: var(--green-deep);
+    background: var(--green-pale);
+    border-color: rgba(45, 95, 63, 0.3);
+}
+
 .hint {
     font-size: 11.5px;
     color: var(--muted);
@@ -1196,6 +1237,57 @@ main>section {
     white-space: nowrap;
 }
 
+.ht-caret {
+    display: inline-block;
+    width: 11px;
+    margin-right: 3px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.ht-count {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 10px;
+    color: var(--muted);
+    background: var(--surface-alt);
+    border-radius: 999px;
+    padding: 0 6px;
+    font-family: var(--font-sans);
+}
+
+.ht-expandable .ht-head:hover .ht-tag {
+    color: var(--green);
+}
+
+.ht-sub {
+    padding-left: 18px;
+}
+
+.ht-sub .ht-tag {
+    font-size: 11.5px;
+    color: var(--muted);
+}
+
+button.ht-tag-add {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    max-width: 100%;
+}
+
+button.ht-tag-add:hover {
+    color: var(--green);
+    text-decoration: underline;
+    text-decoration-color: var(--green-soft);
+}
+
+.ht-sub .ht-fill {
+    opacity: 0.55;
+}
+
 .ht-val {
     font-size: 12.5px;
     font-weight: 600;
@@ -1361,6 +1453,27 @@ main>section {
     font-weight: 400;
     line-height: 1.6;
     word-break: break-word;
+}
+
+.modal-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-height: 108px;
+    overflow-y: auto;
+    padding: 2px 4px 2px 0;
+}
+
+.mh-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 9px;
+    background: var(--green-pale);
+    color: var(--green-deep);
+    border: 1px solid rgba(45, 95, 63, 0.18);
+    border-radius: 999px;
+    font-size: 11.5px;
+    white-space: nowrap;
 }
 
 .modal-editor {

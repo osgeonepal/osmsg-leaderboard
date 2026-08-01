@@ -250,6 +250,78 @@ function addHashtag(raw) {
   renderChips();
   return true;
 }
+
+// Recent searches: remembered client-side (localStorage) so a returning user can re-run a prior query
+// with one click instead of retyping. Newest first, deduped by hashtag set + range, capped at RECENT_MAX.
+const RECENT_KEY = "osmsg.recent.v1",
+  RECENT_MAX = 5;
+const recentKey = (e) => e.hashtags.join(",") + "|" + e.range + "|" + (e.start || "") + (e.end || "");
+function loadRecent() {
+  try {
+    const v = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+    return Array.isArray(v) ? v.filter((e) => e && Array.isArray(e.hashtags) && e.hashtags.length) : [];
+  } catch (err) {
+    console.info("Recent searches unavailable:", err.message);
+    return [];
+  }
+}
+function saveRecentSearch() {
+  if (!state.hashtags.length) return;
+  const entry = { hashtags: [...state.hashtags], range: state.range };
+  if (state.range === "custom" && state.customStart && state.customEnd) {
+    entry.start = isoUTC(state.customStart);
+    entry.end = isoUTC(state.customEnd);
+  }
+  const list = [entry, ...loadRecent().filter((e) => recentKey(e) !== recentKey(entry))].slice(0, RECENT_MAX);
+  try {
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+  } catch (err) {
+    console.info("Could not save recent search:", err.message);
+  }
+  renderRecentSearches();
+}
+function applyRecentSearch(entry) {
+  state.hashtags = [...new Set(entry.hashtags.map((h) => String(h).replace(/^#/, "").toLowerCase()))];
+  if (entry.range === "custom" && entry.start && entry.end) {
+    state.customStart = new Date(entry.start);
+    state.customEnd = new Date(entry.end);
+  } else {
+    state.customStart = state.customEnd = null;
+  }
+  setRangePreset(entry.range);
+  renderChips();
+  apply();
+  runQuery();
+}
+function renderRecentSearches() {
+  const box = $("#recent-searches");
+  if (!box) return;
+  const list = loadRecent();
+  if (!list.length) {
+    box.hidden = true;
+    box.innerHTML = "";
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML =
+    `<span class="rs-label">Recent</span>` +
+    list
+      .map(
+        (e, i) =>
+          `<button type="button" class="rs-chip" data-i="${i}" title="Re-run this search">${escapeHtml(e.hashtags.map((h) => "#" + h).join(", "))}</button>`
+      )
+      .join("");
+  box.querySelectorAll(".rs-chip").forEach((b) => (b.onclick = () => applyRecentSearch(list[+b.dataset.i])));
+}
+
+// A related-hashtag click adds that tag to the current query and re-runs, so the user can drill into the
+// combined set without retyping.
+function addRelatedHashtag(tag) {
+  if (addHashtag(tag)) {
+    apply();
+    runQuery();
+  }
+}
 hashtagInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" || e.key === ",") {
     e.preventDefault();
@@ -452,6 +524,7 @@ async function runQuery() {
     showEmptyPrompt();
     return;
   }
+  saveRecentSearch();
   state.query?.abort?.();
   const ctrl = new AbortController();
   state.query = ctrl;
@@ -885,6 +958,23 @@ function editorFamily(s) {
   if (/StreetComplete/i.test(s)) return "StreetComplete";
   return null;
 }
+
+// Group a user's editors by family for a compact profile line: "iD (2.41.2, 2.34.0), JOSM 1.5".
+function groupEditorsText(editors) {
+  const fams = new Map();
+  for (const e of editors) {
+    const fam = editorFamily(e) || String(e || "").split(/[/\s]/)[0] || "Unknown";
+    const short = shortEditor(e);
+    const ver = short.toLowerCase().startsWith(fam.toLowerCase()) ? short.slice(fam.length).trim() : short;
+    if (!fams.has(fam)) fams.set(fam, []);
+    if (ver && !fams.get(fam).includes(ver)) fams.get(fam).push(ver);
+  }
+  return [...fams.entries()]
+    .map(([fam, vers]) =>
+      vers.length === 0 ? fam : vers.length === 1 ? `${fam} ${vers[0]}` : `${fam} (${vers.join(", ")})`
+    )
+    .join(", ");
+}
 function editorColor(family) {
   const map = {
     iD: ["#E6F1FB", "#185FA5"],
@@ -985,9 +1075,11 @@ function openUserModal(username) {
     .filter(Boolean)
     .filter((h) => !searchedTags.has(String(h).replace(/^#/, "").toLowerCase()))
     .map((h) => "#" + String(h).replace(/^#/, ""));
-  const hashtagLine = userHashtags.length ? `<div class="modal-hashtags">${userHashtags.map(escapeHtml).join(", ")}</div>` : "";
+  const hashtagLine = userHashtags.length
+    ? `<div class="modal-hashtags">${userHashtags.map((h) => `<span class="mh-chip">${escapeHtml(h)}</span>`).join("")}</div>`
+    : "";
   const modalEditors = (r.editors || []).filter(Boolean);
-  const editorText = modalEditors.length ? [...new Set(modalEditors.map(shortEditor))].join(", ") : "Unknown";
+  const editorText = modalEditors.length ? groupEditorsText(modalEditors) : "Unknown";
   const editorLine = `<div class="modal-editor"><i data-lucide="pen-tool"></i> <span title="${escapeHtml(modalEditors.join(", "))}">${escapeHtml(editorText)}</span></div>`;
 
   const { html: tagHtml, keyCount, valueCount } = tagBreakdownHtml(aggregateTagStats([r]), { maxKeys: 24, maxVals: 8 });
@@ -1424,6 +1516,7 @@ function boot() {
   if (apiDocsLink) apiDocsLink.href = swaggerURL;
   readURL();
   renderChips();
+  renderRecentSearches();
   renderWindowBar();
   refreshIcons();
   fetchHealth();
