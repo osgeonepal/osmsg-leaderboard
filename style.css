@@ -1261,6 +1261,23 @@ main>section {
     animation: btn-spin 0.7s linear infinite;
 }
 
+/* Loading state toggled by class, so the button's child nodes stay put and never swallow a click. */
+#search-btn .btn-spinner {
+    display: none;
+}
+
+#search-btn.is-loading .btn-spinner {
+    display: inline-block;
+}
+
+#search-btn.is-loading .btn-ico {
+    display: none;
+}
+
+#search-btn.is-loading .btn-label::after {
+    content: "ing…";
+}
+
 /* Trending hashtags: a readable list (tag + contributor count + proportional bar) */
 .ht-row {
     padding: 7px 0;
