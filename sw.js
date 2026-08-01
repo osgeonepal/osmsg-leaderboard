@@ -8,13 +8,13 @@ const { CacheableResponsePlugin } = workbox.cacheableResponse;
 workbox.core.skipWaiting();
 workbox.core.clientsClaim();
 
-// App shell (HTML + JS) — always take the current version when online, fall back to cache offline.
+// App shell (HTML + JS): always take the current version when online, fall back to cache offline.
 registerRoute(
     ({ request }) => request.mode === "navigate" || ["script", "style", "worker"].includes(request.destination),
     new NetworkFirst({ cacheName: "osmsg-shell-v2", networkTimeoutSeconds: 5 })
 );
 
-// OSMSG API — network-first with no premature timeout: mega-hashtag queries can take ~75s, so let the
+// OSMSG API: network-first with no premature timeout, so a ~75s mega-hashtag query can finish; let the
 // request finish; only fall back to cache when the network genuinely fails (offline).
 registerRoute(
     ({ url }) => url.pathname.startsWith("/api/"),
@@ -24,7 +24,7 @@ registerRoute(
     })
 );
 
-// CDNs (fonts, lucide, tailwind, avatars) — long-lived cache.
+// CDNs (fonts, lucide, tailwind, avatars): long-lived cache.
 registerRoute(
     ({ url }) => ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net", "cdn.tailwindcss.com",
         "storage.googleapis.com", "github.com", "avatars.githubusercontent.com"].includes(url.hostname),

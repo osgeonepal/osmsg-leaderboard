@@ -251,8 +251,8 @@ function addHashtag(raw) {
   return true;
 }
 
-// Recent searches: remembered client-side (localStorage) so a returning user can re-run a prior query
-// with one click instead of retyping. Newest first, deduped by hashtag set + range, capped at RECENT_MAX.
+// Recent searches persisted in localStorage so a returning user can reload a prior query in one click.
+// Newest first, unique by hashtag set, capped at RECENT_MAX.
 const RECENT_KEY = "osmsg.recent.v1",
   RECENT_MAX = 5;
 // Unique by the hashtag set alone (not the range), so the same hashtags searched over different ranges
@@ -470,8 +470,8 @@ async function apiGet(name, params, signal) {
   if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText || ""}`.trim());
   return res.json();
 }
-// Freeze the query window once (relative ranges like 30d resolve "now" here), so every section and the
-// window bar use the exact same [start, end) instead of each recomputing "now" seconds apart.
+// Resolve the window once per query so all sections and the window bar share one [start, end); relative
+// ranges like 30d must not each recompute "now".
 function freezeWindow() {
   const { start, end } = rangeWindow(state.range);
   state.windowStart = start;
@@ -504,13 +504,11 @@ $("#query-form").addEventListener("submit", (e) => {
   runQuery();
 });
 
-// Reference-counted busy state: shows a spinner in the Extract button as a working cue. The controls are
-// deliberately NOT disabled, so a new hashtag/range can be submitted at any time; runQuery aborts the
-// in-flight query and restarts, which is safe.
+// Reference-counted busy state for the Extract spinner. The button is never disabled, so a new query can
+// be submitted anytime; runQuery aborts the in-flight one and restarts.
 let _busyCount = 0;
-// Drive the loading state with a class only. Rewriting the button's innerHTML (as before) detaches its
-// child nodes on every call, and a real click whose mousedown landed on a since-removed child is dropped
-// by the browser, so the Extract button "sometimes" did nothing while a query was loading.
+// Toggle a class only, keeping the button's child nodes in place: a click whose mousedown landed on a
+// replaced child would be dropped by the browser mid-load.
 function setBusy(busy) {
   _busyCount = Math.max(0, _busyCount + (busy ? 1 : -1));
   const btn = $("#search-btn");
@@ -567,8 +565,8 @@ async function runQuery() {
     return p;
   };
   setBusy(true);
-  // Release the controls once the primary content (summary + leaderboard) is up; the secondary
-  // sections keep loading with their own inline status/spinners instead of freezing the UI.
+  // Clear the button spinner once the primary content (summary + leaderboard) is up; secondary sections
+  // keep loading behind their own inline status.
   let _released = false;
   const releasePrimary = () => { if (!_released) { _released = true; setBusy(false); } };
   try {
@@ -916,7 +914,7 @@ function renderPodium() {
 
     if (!r) {
       div.style.opacity = "0.4";
-      div.innerHTML = `<span class="pod-rank">${place}</span><span class="pod-avatar">·</span><span class="pod-name">—</span><span class="pod-score-wrap"><span class="pod-score">0</span></span>`;
+      div.innerHTML = `<span class="pod-rank">${place}</span><span class="pod-avatar">·</span><span class="pod-name">·</span><span class="pod-score-wrap"><span class="pod-score">0</span></span>`;
       el.appendChild(div);
       continue;
     }
@@ -925,7 +923,7 @@ function renderPodium() {
     const modified = (r.nodes_modified || 0) + (r.ways_modified || 0) + (r.rels_modified || 0);
     const deleted = (r.nodes_deleted || 0) + (r.ways_deleted || 0) + (r.rels_deleted || 0);
 
-    // No editor badge here — editor info is shown only in the user modal
+    // Editor info is shown only in the user modal, not on the podium.
     div.innerHTML = `
       <span class="pod-rank">${place}</span>
       <span class="pod-avatar" data-osm-uid="${r.uid}" style="background:${avatarColor(r.username)}">${initials(r.username)}</span>

@@ -1,5 +1,4 @@
-// OSMSG Leaderboard — charts.js
-// The Editors and Trending-hashtags cards are plain HTML lists (see renderEditorBarChart /
+// The Editors and Related-hashtags cards render as plain HTML lists (renderEditorBarChart /
 // renderHashtagPieChart); no charting library is used.
 
 function _ensureChartsSection() {
